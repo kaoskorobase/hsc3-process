@@ -30,4 +30,5 @@ library
                     data-accessor-template == 0.1.*,
                     hosc == 0.6.*,
                     mtl == 1.1.*,
-                    process == 1.0.*
+                    process == 1.0.*,
+                    template-haskell == 2.3.*
