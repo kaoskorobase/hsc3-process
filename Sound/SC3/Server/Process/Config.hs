@@ -4,14 +4,13 @@ module Sound.SC3.Server.Process.Config (
     toAssocs
 ) where
 
+import Control.Monad.State              (State, execState)
 import Data.Accessor
 import Sound.OpenSoundControl           (TCP, UDP)
 import Sound.SC3.Server.Process.Options
 import Data.ConfigFile                  (OptionSpec)
 import Data.Map                         (Map)
 import qualified Data.Map               as Map
-
-import Control.Monad.State      (State, execState)
 
 readMaybe :: (Read a) => String -> Maybe a
 readMaybe s = case reads s of
