@@ -18,7 +18,8 @@ library
   exposed-modules:  Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.Config
                     Sound.SC3.Server.Process.Options
-  other-modules:    Sound.SC3.Server.Process.CommandLine
+  other-modules:    Sound.SC3.Server.Process.Accessor,
+                    Sound.SC3.Server.Process.CommandLine
 
   extensions:       TemplateHaskell, TypeFamilies, TypeSynonymInstances
  
