@@ -31,7 +31,6 @@ import System.Process                       (runInteractiveProcess, waitForProce
 
 -- | Helper class for polymorphic opening of network connections.
 class OpenTransport t where
-    -- type TEventHandler t
     openTransport :: RTOptions -> String -> IO t
 
 checkPort :: String -> Int -> Int
@@ -39,12 +38,10 @@ checkPort tag p | p <= 0 || p > 65535 = error ("Invalid " ++ tag ++ " port " ++ 
 checkPort _ p                         = p
 
 instance OpenTransport (UDP) where
-    -- type TEventHandler UDP = EventHandler UDP
-    openTransport options server = openUDP server (checkPort "UDP" $ options^.udpPortNumber)
+    openTransport options server = openUDP server (checkPort "UDP" $ udpPortNumber options)
 
 instance OpenTransport (TCP) where
-    -- type TEventHandler TCP = EventHandler TCP
-    openTransport options server = openTCP server (checkPort "TCP" $ options^.tcpPortNumber)
+    openTransport options server = openTCP server (checkPort "TCP" $ tcpPortNumber options)
 
 -- ====================================================================
 -- * Event handler
