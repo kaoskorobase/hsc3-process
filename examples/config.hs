@@ -12,4 +12,3 @@ main = do
         (serverOpts, rtOpts, nrtOpts) <- items cp "scsynth" >>= fromAssocs
         liftIO $ print serverOpts >> print rtOpts >> print nrtOpts
     return ()
-    
