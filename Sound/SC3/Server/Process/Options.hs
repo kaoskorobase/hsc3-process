@@ -72,6 +72,17 @@ defaultServerOptions = ServerOptions {
 
 $(deriveAccessors ''ServerOptions)
 
+{-# DEPRECATED realTimeMemorySize "Use `realtimeMemorySize' instead" #-}
+realTimeMemorySize :: ServerOptions -> Int
+realTimeMemorySize = realtimeMemorySize
+
+{-# DEPRECATED _realTimeMemorySize "Use `_realtimeMemorySize' instead" #-}
+_realTimeMemorySize :: Accessor ServerOptions Int
+_realTimeMemorySize = _realtimeMemorySize
+
+-- ====================================================================
+-- * Realtime options
+
 -- | Realtime server options, parameterized by the OpenSoundControl
 -- 'Transport' to be used.
 data RTOptions = RTOptions {
