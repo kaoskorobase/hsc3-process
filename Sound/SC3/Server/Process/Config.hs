@@ -3,12 +3,13 @@ module Sound.SC3.Server.Process.Config (
     fromAssocs,
     toAssocs
 ) where
-
+    
+import Control.Monad.Error              (MonadError)
 import Control.Monad.State              (State, evalState, execState)
 import Data.Accessor
 import Sound.OpenSoundControl           (TCP, UDP)
 import Sound.SC3.Server.Process.Options
-import Data.ConfigFile                  (OptionSpec)
+import Data.ConfigFile                  (CPError, OptionSpec)
 import Data.Map                         (Map)
 import qualified Data.Map               as Map
 
@@ -17,6 +18,7 @@ readMaybe s = case reads s of
              [(a, "")] -> return a
              _         -> fail ("Could not read " ++ (show s))
 
+-- TODO: Add parse error handling
 set :: (Read b) => Map OptionSpec String -> OptionSpec -> Accessor a b -> State a ()
 set opts name accessor = do
     case Map.lookup name opts of
@@ -77,8 +79,10 @@ getNRTOptions m = flip execState defaultNRTOptions $ do
 
 -- | Read server options, realtime options and non-relatime options from an
 -- association list.
-fromAssocs :: [(OptionSpec, String)] -> (ServerOptions, RTOptions, NRTOptions)
-fromAssocs opts = (getServerOptions m, getRTOptions m, getNRTOptions m)
+--
+-- TODO: Add error handling.
+fromAssocs :: MonadError CPError m => [(OptionSpec, String)] -> m (ServerOptions, RTOptions, NRTOptions)
+fromAssocs opts = return (getServerOptions m, getRTOptions m, getNRTOptions m)
     where m = Map.fromList opts
 
 -- | Convert 'ServerOptions' to association list.
