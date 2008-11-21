@@ -16,7 +16,7 @@ cabal-version:      >= 1.2
 
 library
   exposed-modules:  Sound.SC3.Server.Process
-                    Sound.SC3.Server.Process.Config
+                    Sound.SC3.Server.Process.ConfigFile
                     Sound.SC3.Server.Process.Options
   other-modules:    Sound.SC3.Server.Process.Accessor,
                     Sound.SC3.Server.Process.CommandLine

@@ -1,5 +1,5 @@
 -- | Read server options from configuraton file.
-module Sound.SC3.Server.Process.Config (
+module Sound.SC3.Server.Process.ConfigFile (
     fromAssocs,
     toAssocs
 ) where
