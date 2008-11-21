@@ -1,6 +1,7 @@
 -- | Read server options from configuraton file.
 module Sound.SC3.Server.Process.Config (
-    fromSection
+    fromAssocs,
+    toAssocs
 ) where
 
 import Data.Accessor
@@ -75,8 +76,10 @@ getNRTOptions m = flip execState defaultNRTOptions $ do
     set m "outputHeaderFormat"         _outputHeaderFormat
     set m "outputSampleFormat"         _outputSampleFormat
 
-fromSection :: [(OptionSpec, String)] -> (ServerOptions, RTOptions, NRTOptions)
-fromSection opts = (getServerOptions m, getRTOptions m, getNRTOptions m)
+-- | Read server options, realtime options and non-relatime options from an
+-- association list.
+fromAssocs :: [(OptionSpec, String)] -> (ServerOptions, RTOptions, NRTOptions)
+fromAssocs opts = (getServerOptions m, getRTOptions m, getNRTOptions m)
     where m = Map.fromList opts
 
 -- setServerOptions options = flip execState options $ sequence [
@@ -96,50 +99,7 @@ fromSection opts = (getServerOptions m, getRTOptions m, getNRTOptions m)
 --     , get "verbosity"                  verbosity
 --     ]
 
-
--- toSection :: ServerOptions -> Maybe RTOptions -> Maybe NRTOption -> [(OptionSpec, String)]
--- toSection = undefined
-
--- fromSectionTCP :: [(OptionSpec, String)] -> (ServerOptions, RTOptions TCP)
--- fromSectionTCP opts = (getServerOptions m, getRTOptionsTCP m)
---     where m = Map.fromList opts
--- 
--- fromSectionNRT :: [(OptionSpec, String)] -> (ServerOptions, NRTOptions)
--- fromSectionNRT opts = (getServerOptions m, getNRTOptions m)
---     where m = Map.fromList opts
-
--- -- ServerOptions
--- set_serverProgram              x v = x { serverProgram              = v }
--- set_numberOfControlBusChannels x v = x { numberOfControlBusChannels = v }
--- set_numberOfAudioBusChannels   x v = x { numberOfAudioBusChannels   = v }
--- set_numberOfInputBusChannels   x v = x { numberOfInputBusChannels   = v }
--- set_numberOfOutputBusChannels  x v = x { numberOfOutputBusChannels  = v }
--- set_blockSize                  x v = x { blockSize                  = v }
--- set_numberOfSampleBuffers      x v = x { numberOfSampleBuffers      = v }
--- set_maxNumberOfNodes           x v = x { maxNumberOfNodes           = v }
--- set_maxNumberOfSynthDefs       x v = x { maxNumberOfSynthDefs       = v }
--- set_realTimeMemorySize         x v = x { realTimeMemorySize         = v }
--- set_numberOfWireBuffers        x v = x { numberOfWireBuffers        = v }
--- set_numberOfRandomSeeds        x v = x { numberOfRandomSeeds        = v }
--- set_loadSynthDefs              x v = x { loadSynthDefs              = v }
--- set_verbosity                  x v = x { verbosity                  = v }
--- 
--- -- RTOptions
--- set_udpPortNumber              x v = x { udpPortNumber        = v }
--- set_tcpPortNumber              x v = x { tcpPortNumber        = v }
--- set_useZeroconf                x v = x { useZeroconf          = v }
--- set_maxNumberOfLogins          x v = x { maxNumberOfLogins    = v }
--- set_sessionPassword            x v = x { sessionPassword      = v }
--- set_hardwareDeviceName         x v = x { hardwareDeviceName   = v }
--- set_hardwareBufferSize         x v = x { hardwareBufferSize   = v }
--- set_hardwareSampleRate         x v = x { hardwareSampleRate   = v }
--- set_inputStreamsEnabled        x v = x { inputStreamsEnabled  = v }
--- set_outputStreamsEnabled       x v = x { outputStreamsEnabled = v }
--- 
--- -- NRTOptions
--- set_commandFilePath            x v = x { commandFilePath    = v }
--- set_inputFilePath              x v = x { inputFilePath      = v }
--- set_outputFilePath             x v = x { outputFilePath     = v }
--- set_outputSampleRate           x v = x { outputSampleRate   = v }
--- set_outputHeaderFormat         x v = x { outputHeaderFormat = v }
--- set_outputSampleFormat         x v = x { outputSampleFormat = v }
+-- | Convert server options and optionally realtime options and non-realtime
+-- options to an association list.
+toAssocs :: ServerOptions -> Maybe RTOptions -> Maybe NRTOptions -> [(OptionSpec, String)]
+toAssocs = undefined
