@@ -26,13 +26,11 @@ import System.Exit                          (ExitCode)
 import System.IO                            (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
 import System.Process                       (runInteractiveProcess, waitForProcess)
 
--- ====================================================================
--- * Realtime options
-
 -- | Helper class for polymorphic opening of network connections.
 class OpenTransport t where
     openTransport :: RTOptions -> String -> IO t
 
+-- | Check wether a network port is within the valid range (0, 65535]
 checkPort :: String -> Int -> Int
 checkPort tag p | p <= 0 || p > 65535 = error ("Invalid " ++ tag ++ " port " ++ show p)
 checkPort _ p                         = p

@@ -1,4 +1,4 @@
--- | Read server options from file
+-- | Read server options from configuraton file.
 module Sound.SC3.Server.Process.Config (
     fromSection
 ) where
@@ -30,6 +30,8 @@ get name accessor = do
     value <- getA accessor
     return (name, show value)
 
+-- | Get 'ServerOptions' from an option 'Map'.
+-- Uninitialized fields are taken from 'defaultServerOptions'.
 getServerOptions :: Map OptionSpec String -> ServerOptions
 getServerOptions m = flip execState defaultServerOptions $ do
     set m "serverProgram"              _serverProgram
@@ -47,6 +49,8 @@ getServerOptions m = flip execState defaultServerOptions $ do
     set m "loadSynthDefs"              _loadSynthDefs
     set m "verbosity"                  _verbosity
 
+-- | Get 'RTOptions' from an option 'Map'.
+-- Uninitialized fields are taken from 'defaultRTOptions'.
 getRTOptions :: Map OptionSpec String -> RTOptions
 getRTOptions m = flip execState defaultRTOptions $ do
     set m "udpPortNumber"              _udpPortNumber
@@ -60,6 +64,8 @@ getRTOptions m = flip execState defaultRTOptions $ do
     set m "inputStreamsEnabled"        _inputStreamsEnabled
     set m "outputStreamsEnabled"       _outputStreamsEnabled
 
+-- | Get 'NRTOptions' from an option 'Map'.
+-- Uninitialized fields are taken from 'defaultNRTOptions'.
 getNRTOptions :: Map OptionSpec String -> NRTOptions
 getNRTOptions m = flip execState defaultNRTOptions $ do
     set m "commandFilePath"            _commandFilePath
