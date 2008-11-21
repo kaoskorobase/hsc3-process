@@ -4,7 +4,7 @@ module Sound.SC3.Server.Process.Config (
     toAssocs
 ) where
 
-import Control.Monad.State              (State, execState)
+import Control.Monad.State              (State, evalState, execState)
 import Data.Accessor
 import Sound.OpenSoundControl           (TCP, UDP)
 import Sound.SC3.Server.Process.Options
@@ -81,24 +81,55 @@ fromAssocs :: [(OptionSpec, String)] -> (ServerOptions, RTOptions, NRTOptions)
 fromAssocs opts = (getServerOptions m, getRTOptions m, getNRTOptions m)
     where m = Map.fromList opts
 
--- setServerOptions options = flip execState options $ sequence [
---       get "serverProgram"              serverProgram
---     , get "numberOfControlBusChannels" numberOfControlBusChannels
---     , get "numberOfAudioBusChannels"   numberOfAudioBusChannels
---     , get "numberOfInputBusChannels"   numberOfInputBusChannels
---     , get "numberOfOutputBusChannels"  numberOfOutputBusChannels
---     , get "blockSize"                  blockSize
---     , get "numberOfSampleBuffers"      numberOfSampleBuffers
---     , get "maxNumberOfNodes"           maxNumberOfNodes
---     , get "maxNumberOfSynthDefs"       maxNumberOfSynthDefs
---     , get "realTimeMemorySize"         realTimeMemorySize
---     , get "numberOfWireBuffers"        numberOfWireBuffers
---     , get "numberOfRandomSeeds"        numberOfRandomSeeds
---     , get "loadSynthDefs"              loadSynthDefs
---     , get "verbosity"                  verbosity
---     ]
+-- | Convert 'ServerOptions' to association list.
+assocsServerOptions :: ServerOptions -> [(OptionSpec, String)]
+assocsServerOptions options = flip evalState options $ sequence [
+      get "serverProgram"              _serverProgram
+    , get "numberOfControlBusChannels" _numberOfControlBusChannels
+    , get "numberOfAudioBusChannels"   _numberOfAudioBusChannels
+    , get "numberOfInputBusChannels"   _numberOfInputBusChannels
+    , get "numberOfOutputBusChannels"  _numberOfOutputBusChannels
+    , get "blockSize"                  _blockSize
+    , get "numberOfSampleBuffers"      _numberOfSampleBuffers
+    , get "maxNumberOfNodes"           _maxNumberOfNodes
+    , get "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
+    , get "realtimeMemorySize"         _realtimeMemorySize
+    , get "numberOfWireBuffers"        _numberOfWireBuffers
+    , get "numberOfRandomSeeds"        _numberOfRandomSeeds
+    , get "loadSynthDefs"              _loadSynthDefs
+    , get "verbosity"                  _verbosity
+    ]
+
+-- | Convert 'RTOptions' to association list.
+assocsRTOptions :: RTOptions -> [(OptionSpec, String)]
+assocsRTOptions options = flip evalState options $ sequence [
+      get "udpPortNumber"              _udpPortNumber
+    , get "tcpPortNumber"              _tcpPortNumber
+    , get "useZeroconf"                _useZeroconf
+    , get "maxNumberOfLogins"          _maxNumberOfLogins
+    , get "sessionPassword"            _sessionPassword
+    , get "hardwareDeviceName"         _hardwareDeviceName
+    , get "hardwareBufferSize"         _hardwareBufferSize
+    , get "hardwareSampleRate"         _hardwareSampleRate
+    , get "inputStreamsEnabled"        _inputStreamsEnabled
+    , get "outputStreamsEnabled"       _outputStreamsEnabled
+    ]
+
+-- | Convert 'NRTOptions' to association list.
+assocsNRTOptions :: NRTOptions -> [(OptionSpec, String)]
+assocsNRTOptions options = flip evalState options $ sequence [
+      get "commandFilePath"            _commandFilePath
+    , get "inputFilePath"              _inputFilePath
+    , get "outputFilePath"             _outputFilePath
+    , get "outputSampleRate"           _outputSampleRate
+    , get "outputHeaderFormat"         _outputHeaderFormat
+    , get "outputSampleFormat"         _outputSampleFormat
+    ]
 
 -- | Convert server options and optionally realtime options and non-realtime
 -- options to an association list.
 toAssocs :: ServerOptions -> Maybe RTOptions -> Maybe NRTOptions -> [(OptionSpec, String)]
-toAssocs = undefined
+toAssocs serverOptions rtOptions nrtOptions =
+    assocsServerOptions serverOptions
+    ++ maybe [] assocsRTOptions rtOptions
+    ++ maybe [] assocsNRTOptions nrtOptions
