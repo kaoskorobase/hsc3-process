@@ -44,34 +44,34 @@ mkOption defaultOptions options optName accessor =
 
 instance CommandLine (ServerOptions) where
     argumentList options = concat [ 
-              o "-c" numberOfControlBusChannels
-            , o "-a" numberOfAudioBusChannels
-            , o "-i" numberOfInputBusChannels
-            , o "-o" numberOfOutputBusChannels
-            , o "-z" blockSize
-            , o "-b" numberOfSampleBuffers
-            , o "-n" maxNumberOfNodes
-            , o "-d" maxNumberOfSynthDefs
-            , o "-w" numberOfWireBuffers
-            , o "-r" numberOfRandomSeeds
-            , o "-D" loadSynthDefs
-            , o "-v" verbosity ]
+              o "-c" _numberOfControlBusChannels
+            , o "-a" _numberOfAudioBusChannels
+            , o "-i" _numberOfInputBusChannels
+            , o "-o" _numberOfOutputBusChannels
+            , o "-z" _blockSize
+            , o "-b" _numberOfSampleBuffers
+            , o "-n" _maxNumberOfNodes
+            , o "-d" _maxNumberOfSynthDefs
+            , o "-w" _numberOfWireBuffers
+            , o "-r" _numberOfRandomSeeds
+            , o "-D" _loadSynthDefs
+            , o "-v" _verbosity ]
         where
             o :: (Eq b, Option b, Show b) => String -> Accessor ServerOptions b -> [String]
             o = mkOption defaultServerOptions options
 
 instance CommandLine (RTOptions) where
     argumentList options = concat [
-              o "-u" udpPortNumber
-            , o "-t" tcpPortNumber
-            , o "-R" useZeroconf
-            , o "-H" hardwareDeviceName
-            , o "-Z" hardwareBufferSize
-            , o "-S" hardwareSampleRate
-            , o "-l" maxNumberOfLogins
-            , o "-p" sessionPassword
-            , o "-I" inputStreamsEnabled
-            , o "-O" outputStreamsEnabled ]
+              o "-u" _udpPortNumber
+            , o "-t" _tcpPortNumber
+            , o "-R" _useZeroconf
+            , o "-H" _hardwareDeviceName
+            , o "-Z" _hardwareBufferSize
+            , o "-S" _hardwareSampleRate
+            , o "-l" _maxNumberOfLogins
+            , o "-p" _sessionPassword
+            , o "-I" _inputStreamsEnabled
+            , o "-O" _outputStreamsEnabled ]
         where
             o :: (Eq b, Option b, Show b) => String -> Accessor RTOptions b -> [String]
             o = mkOption defaultRTOptions options
@@ -79,13 +79,13 @@ instance CommandLine (RTOptions) where
 instance CommandLine (NRTOptions) where
     argumentList options =
         "-N" : map ($ options) [
-              fromMaybe "_" . getVal commandFilePath
-            , fromMaybe "_" . getVal inputFilePath
-            , getVal outputFilePath
-            , showOption . getVal outputSampleRate
-            , getVal outputHeaderFormat
-            , getVal outputSampleFormat ]
+              fromMaybe "_" . commandFilePath
+            , fromMaybe "_" . inputFilePath
+            , outputFilePath
+            , showOption . outputSampleRate
+            , outputHeaderFormat
+            , outputSampleFormat ]
 
 -- | Construct the scsynth command line from 'ServerOptions' and either 'RTOptions' or 'NRTOptions'.
 commandLine :: (CommandLine a) => ServerOptions -> a -> [String]
-commandLine serverOptions options = ((serverOptions ^. serverProgram) : argumentList serverOptions) ++ argumentList options
+commandLine serverOptions options = (serverProgram serverOptions : argumentList serverOptions) ++ argumentList options

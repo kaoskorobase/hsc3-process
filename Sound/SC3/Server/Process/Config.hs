@@ -32,53 +32,42 @@ get name accessor = do
 
 getServerOptions :: Map OptionSpec String -> ServerOptions
 getServerOptions m = flip execState defaultServerOptions $ do
-    -- ServerOptions
-    set m "serverProgram"              serverProgram
-    set m "numberOfControlBusChannels" numberOfControlBusChannels
-    set m "numberOfAudioBusChannels"   numberOfAudioBusChannels
-    set m "numberOfInputBusChannels"   numberOfInputBusChannels
-    set m "numberOfOutputBusChannels"  numberOfOutputBusChannels
-    set m "blockSize"                  blockSize
-    set m "numberOfSampleBuffers"      numberOfSampleBuffers
-    set m "maxNumberOfNodes"           maxNumberOfNodes
-    set m "maxNumberOfSynthDefs"       maxNumberOfSynthDefs
-    set m "realTimeMemorySize"         realTimeMemorySize
-    set m "numberOfWireBuffers"        numberOfWireBuffers
-    set m "numberOfRandomSeeds"        numberOfRandomSeeds
-    set m "loadSynthDefs"              loadSynthDefs
-    set m "verbosity"                  verbosity
+    set m "serverProgram"              _serverProgram
+    set m "numberOfControlBusChannels" _numberOfControlBusChannels
+    set m "numberOfAudioBusChannels"   _numberOfAudioBusChannels
+    set m "numberOfInputBusChannels"   _numberOfInputBusChannels
+    set m "numberOfOutputBusChannels"  _numberOfOutputBusChannels
+    set m "blockSize"                  _blockSize
+    set m "numberOfSampleBuffers"      _numberOfSampleBuffers
+    set m "maxNumberOfNodes"           _maxNumberOfNodes
+    set m "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
+    set m "realtimeMemorySize"         _realtimeMemorySize
+    set m "numberOfWireBuffers"        _numberOfWireBuffers
+    set m "numberOfRandomSeeds"        _numberOfRandomSeeds
+    set m "loadSynthDefs"              _loadSynthDefs
+    set m "verbosity"                  _verbosity
 
 getRTOptions :: Map OptionSpec String -> RTOptions
 getRTOptions m = flip execState defaultRTOptions $ do
-    -- RTOptions
-    set m "udpPortNumber"              udpPortNumber
-    set m "tcpPortNumber"              tcpPortNumber
-    set m "useZeroconf"                useZeroconf
-    set m "maxNumberOfLogins"          maxNumberOfLogins
-    set m "sessionPassword"            sessionPassword
-    set m "hardwareDeviceName"         hardwareDeviceName
-    set m "hardwareBufferSize"         hardwareBufferSize
-    set m "hardwareSampleRate"         hardwareSampleRate
-    set m "inputStreamsEnabled"        inputStreamsEnabled
-    set m "outputStreamsEnabled"       outputStreamsEnabled
-
--- getRTOptionsUDP :: Map OptionSpec String -> RTOptions UDP
--- getRTOptionsUDP m = flip execState defaultRTOptionsUDP $
---                         getRTOptions m >> get m "udpPortNumber" set_udpPortNumber
---     
--- getRTOptionsTCP :: Map OptionSpec String -> RTOptions TCP
--- getRTOptionsTCP m = flip execState defaultRTOptionsTCP $
---                         getRTOptions m >> get m "tcpPortNumber" set_tcpPortNumber
+    set m "udpPortNumber"              _udpPortNumber
+    set m "tcpPortNumber"              _tcpPortNumber
+    set m "useZeroconf"                _useZeroconf
+    set m "maxNumberOfLogins"          _maxNumberOfLogins
+    set m "sessionPassword"            _sessionPassword
+    set m "hardwareDeviceName"         _hardwareDeviceName
+    set m "hardwareBufferSize"         _hardwareBufferSize
+    set m "hardwareSampleRate"         _hardwareSampleRate
+    set m "inputStreamsEnabled"        _inputStreamsEnabled
+    set m "outputStreamsEnabled"       _outputStreamsEnabled
 
 getNRTOptions :: Map OptionSpec String -> NRTOptions
 getNRTOptions m = flip execState defaultNRTOptions $ do
-    -- NRTOptions
-    set m "commandFilePath"            commandFilePath
-    set m "inputFilePath"              inputFilePath
-    set m "outputFilePath"             outputFilePath
-    set m "outputSampleRate"           outputSampleRate
-    set m "outputHeaderFormat"         outputHeaderFormat
-    set m "outputSampleFormat"         outputSampleFormat
+    set m "commandFilePath"            _commandFilePath
+    set m "inputFilePath"              _inputFilePath
+    set m "outputFilePath"             _outputFilePath
+    set m "outputSampleRate"           _outputSampleRate
+    set m "outputHeaderFormat"         _outputHeaderFormat
+    set m "outputSampleFormat"         _outputSampleFormat
 
 fromSection :: [(OptionSpec, String)] -> (ServerOptions, RTOptions, NRTOptions)
 fromSection opts = (getServerOptions m, getRTOptions m, getNRTOptions m)

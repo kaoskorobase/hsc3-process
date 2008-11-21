@@ -3,23 +3,22 @@
 module Sound.SC3.Server.Process (
     module Sound.SC3.Server.Process.Options,
     commandLine,
-    EventHandler,
-    onBoot,
-    onPutString,
-    onPutError,
+    EventHandler(..),
+    _onBoot,
+    _onPutString,
+    _onPutError,
     defaultEventHandler,
     withSynth,
     withNRT
 ) where
 
-import Data.Accessor
-import Data.Accessor.Template               (deriveAccessors)
 import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP)
 import Control.Concurrent                   (forkIO)
 import Control.Monad                        (unless)
 import Prelude hiding                       (catch)
 import Data.List                            (isPrefixOf)
 
+import Sound.SC3.Server.Process.Accessor    (deriveAccessors)
 import Sound.SC3.Server.Process.Options
 import Sound.SC3.Server.Process.CommandLine
 
@@ -54,9 +53,9 @@ instance OpenTransport (TCP) where
 -- parameterized by the I/O handle used for sending OSC commands to the
 -- server.
 data EventHandler t = EventHandler {
-    onPutString_ :: String -> IO (),     -- ^ Handle one line of normal output
-    onPutError_  :: String -> IO (),     -- ^ Handle one line of error output
-    onBoot_      :: t -> IO ()           -- ^ Executed with the OSC handle after the server has booted
+    onPutString :: String -> IO (),     -- ^ Handle one line of normal output
+    onPutError  :: String -> IO (),     -- ^ Handle one line of error output
+    onBoot      :: t -> IO ()           -- ^ Executed with the OSC handle after the server has booted
 }
 
 $(deriveAccessors ''EventHandler)
@@ -64,9 +63,9 @@ $(deriveAccessors ''EventHandler)
 -- | Default event handler, writing to stdout and stderr, respectively.
 defaultEventHandler :: EventHandler t
 defaultEventHandler = EventHandler {
-    onPutString_ = hPutStrLn stdout,
-    onPutError_  = hPutStrLn stderr,
-    onBoot_      = const (return ())
+    onPutString = hPutStrLn stdout,
+    onPutError  = hPutStrLn stderr,
+    onBoot      = const (return ())
 }
 
 -- ====================================================================
@@ -102,17 +101,17 @@ withSynth serverOptions rtOptions handler = do
                 l <- hGetLine h
                 if isPrefixOf "SuperCollider 3 server ready.." l
                     then do
-                        onPutString_ handler l
+                        onPutString handler l
                         fd <- openTransport rtOptions "127.0.0.1"
-                        forkIO $ onBoot_ handler fd
+                        forkIO $ onBoot handler fd
                         -- Spawn more efficient output handler
                         forkIO $ putStdout h
                         return ()
                     else do
-                        onPutString_ handler l
+                        onPutString handler l
                         putStdout0 h -- recurse
-        putStdout = pipeOutput (onPutString_ handler)
-        putStderr = pipeOutput (onPutError_  handler)
+        putStdout = pipeOutput (onPutString handler)
+        putStderr = pipeOutput (onPutError  handler)
     
 -- ====================================================================
 -- * Non-Realtime scsynth execution
@@ -128,11 +127,11 @@ withNRT serverOptions nrtOptions handler = do
         (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStdout hOut
         forkIO $ putStderr hErr
-        forkIO $ onBoot_ handler hIn
+        forkIO $ onBoot handler hIn
         waitForProcess hProc
     where
-        (exe:args) = commandLine serverOptions (flip ($) nrtOptions (commandFilePath ^: const Nothing))
-        putStdout = pipeOutput (onPutString_ handler)
-        putStderr = pipeOutput (onPutString_ handler)
+        (exe:args) = commandLine serverOptions nrtOptions { commandFilePath = Nothing }
+        putStdout = pipeOutput (onPutString handler)
+        putStderr = pipeOutput (onPutString handler)
 
 -- EOF
