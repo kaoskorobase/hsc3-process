@@ -12,7 +12,7 @@ stability:          provisional
 homepage:           http://code.haskell.org/~StefanKersten/code/hsc3-process
 tested-with:        GHC == 6.10.1
 build-type:         Simple
-cabal-version:      >= 1.2
+cabal-version:      >= 1.6
 
 extra-source-files: examples/config.hs
                     examples/scsynth.cfg
