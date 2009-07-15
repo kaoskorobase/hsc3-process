@@ -32,7 +32,7 @@ library
                     containers == 0.2.*,
                     data-accessor == 0.1.*,
                     data-accessor-template == 0.1.*,
-                    hosc == 0.6.*,
+                    hosc == 0.8.*,
                     mtl == 1.1.*,
                     process == 1.0.*,
                     template-haskell == 2.3.*
