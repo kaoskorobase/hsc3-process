@@ -28,7 +28,7 @@ library
   extensions:       FlexibleContexts, TemplateHaskell, TypeSynonymInstances
  
   build-depends:    base >= 3 && < 5,
-                    ConfigFile,
+                    ConfigFile == 1.0.*,
                     containers == 0.2.*,
                     data-accessor == 0.1.*,
                     data-accessor-template == 0.1.*,
