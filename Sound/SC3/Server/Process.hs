@@ -2,6 +2,7 @@
 -- either for realtime or non-realtime execution.
 module Sound.SC3.Server.Process (
     module Sound.SC3.Server.Process.Options,
+    OpenTransport(..),
     commandLine,
     EventHandler(..),
     _onBoot,
