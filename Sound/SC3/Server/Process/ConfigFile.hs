@@ -5,7 +5,7 @@ module Sound.SC3.Server.Process.ConfigFile (
 ) where
     
 import Control.Monad.Error              (MonadError)
-import Control.Monad.State              (State, evalState, execState)
+import Control.Monad.Trans.State        (StateT, evalStateT, execStateT)
 import Data.Accessor
 import Sound.OpenSoundControl           (TCP, UDP)
 import Sound.SC3.Server.Process.Options
@@ -19,7 +19,7 @@ readMaybe s = case reads s of
              _         -> fail ("Could not read " ++ (show s))
 
 -- TODO: Add parse error handling
-set :: (Read b) => Map OptionSpec String -> OptionSpec -> Accessor a b -> State a ()
+set :: (Read b, Monad m) => Map OptionSpec String -> OptionSpec -> Accessor a b -> StateT a m ()
 set opts name accessor = do
     case Map.lookup name opts of
         Nothing  -> return ()
@@ -27,15 +27,15 @@ set opts name accessor = do
                         Nothing    -> return ()
                         Just value -> putA accessor value
 
-get :: (Show b) => OptionSpec -> Accessor a b -> State a (OptionSpec, String)
+get :: (Show b, Monad m) => OptionSpec -> Accessor a b -> StateT a m (OptionSpec, String)
 get name accessor = do
     value <- getA accessor
     return (name, show value)
 
 -- | Get 'ServerOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultServerOptions'.
-getServerOptions :: Map OptionSpec String -> ServerOptions
-getServerOptions m = flip execState defaultServerOptions $ do
+getServerOptions :: (Monad m) => Map OptionSpec String -> m ServerOptions
+getServerOptions m = flip execStateT defaultServerOptions $ do
     set m "serverProgram"              _serverProgram
     set m "numberOfControlBusChannels" _numberOfControlBusChannels
     set m "numberOfAudioBusChannels"   _numberOfAudioBusChannels
@@ -53,8 +53,8 @@ getServerOptions m = flip execState defaultServerOptions $ do
 
 -- | Get 'RTOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultRTOptions'.
-getRTOptions :: Map OptionSpec String -> RTOptions
-getRTOptions m = flip execState defaultRTOptions $ do
+getRTOptions :: (Monad m) => Map OptionSpec String -> m RTOptions
+getRTOptions m = flip execStateT defaultRTOptions $ do
     set m "udpPortNumber"              _udpPortNumber
     set m "tcpPortNumber"              _tcpPortNumber
     set m "useZeroconf"                _useZeroconf
@@ -68,8 +68,8 @@ getRTOptions m = flip execState defaultRTOptions $ do
 
 -- | Get 'NRTOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultNRTOptions'.
-getNRTOptions :: Map OptionSpec String -> NRTOptions
-getNRTOptions m = flip execState defaultNRTOptions $ do
+getNRTOptions :: Monad m => Map OptionSpec String -> m NRTOptions
+getNRTOptions m = flip execStateT defaultNRTOptions $ do
     set m "commandFilePath"            _commandFilePath
     set m "inputFilePath"              _inputFilePath
     set m "outputFilePath"             _outputFilePath
@@ -82,12 +82,16 @@ getNRTOptions m = flip execState defaultNRTOptions $ do
 --
 -- TODO: Add error handling.
 fromAssocs :: MonadError CPError m => [(OptionSpec, String)] -> m (ServerOptions, RTOptions, NRTOptions)
-fromAssocs opts = return (getServerOptions m, getRTOptions m, getNRTOptions m)
+fromAssocs opts = do
+    srvo <- getServerOptions m
+    rto  <- getRTOptions m
+    nrto <- getNRTOptions m
+    return (srvo, rto, nrto)
     where m = Map.fromList opts
 
 -- | Convert 'ServerOptions' to association list.
-assocsServerOptions :: ServerOptions -> [(OptionSpec, String)]
-assocsServerOptions options = flip evalState options $ sequence [
+assocsServerOptions :: Monad m => ServerOptions -> m [(OptionSpec, String)]
+assocsServerOptions options = flip evalStateT options $ sequence [
       get "serverProgram"              _serverProgram
     , get "numberOfControlBusChannels" _numberOfControlBusChannels
     , get "numberOfAudioBusChannels"   _numberOfAudioBusChannels
@@ -105,8 +109,8 @@ assocsServerOptions options = flip evalState options $ sequence [
     ]
 
 -- | Convert 'RTOptions' to association list.
-assocsRTOptions :: RTOptions -> [(OptionSpec, String)]
-assocsRTOptions options = flip evalState options $ sequence [
+assocsRTOptions :: Monad m => RTOptions -> m [(OptionSpec, String)]
+assocsRTOptions options = flip evalStateT options $ sequence [
       get "udpPortNumber"              _udpPortNumber
     , get "tcpPortNumber"              _tcpPortNumber
     , get "useZeroconf"                _useZeroconf
@@ -120,8 +124,8 @@ assocsRTOptions options = flip evalState options $ sequence [
     ]
 
 -- | Convert 'NRTOptions' to association list.
-assocsNRTOptions :: NRTOptions -> [(OptionSpec, String)]
-assocsNRTOptions options = flip evalState options $ sequence [
+assocsNRTOptions :: Monad m => NRTOptions -> m [(OptionSpec, String)]
+assocsNRTOptions options = flip evalStateT options $ sequence [
       get "commandFilePath"            _commandFilePath
     , get "inputFilePath"              _inputFilePath
     , get "outputFilePath"             _outputFilePath
@@ -132,8 +136,9 @@ assocsNRTOptions options = flip evalState options $ sequence [
 
 -- | Convert server options and optionally realtime options and non-realtime
 -- options to an association list.
-toAssocs :: ServerOptions -> Maybe RTOptions -> Maybe NRTOptions -> [(OptionSpec, String)]
-toAssocs serverOptions rtOptions nrtOptions =
-    assocsServerOptions serverOptions
-    ++ maybe [] assocsRTOptions rtOptions
-    ++ maybe [] assocsNRTOptions nrtOptions
+toAssocs :: Monad m => ServerOptions -> Maybe RTOptions -> Maybe NRTOptions -> m [(OptionSpec, String)]
+toAssocs serverOptions rtOptions nrtOptions = do
+    srvo <- assocsServerOptions serverOptions
+    rto  <- maybe (return []) assocsRTOptions rtOptions
+    nrto <- maybe (return []) assocsNRTOptions nrtOptions
+    return $ srvo++rto++nrto
