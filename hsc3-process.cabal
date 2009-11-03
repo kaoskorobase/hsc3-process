@@ -5,7 +5,7 @@ description:        Create and control scsynth processes.
 license:            GPL
 license-file:       LICENSE
 category:           Sound
-copyright:          Copyright (c) Stefan Kersten 2008
+copyright:          Copyright (c) Stefan Kersten 2008-2009
 author:             Stefan Kersten
 maintainer:         Stefan Kersten
 stability:          provisional
