@@ -84,7 +84,6 @@ withSynth :: (Transport t, OpenTransport t) =>
  -> EventHandler t
  -> IO ExitCode
 withSynth serverOptions rtOptions handler = do
-        print (exe, args)
         (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStdout0 hOut
         forkIO $ putStderr  hErr
