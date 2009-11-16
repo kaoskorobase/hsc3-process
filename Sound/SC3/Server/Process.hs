@@ -94,7 +94,7 @@ withSynth serverOptions rtOptions handler = do
             eof <- hIsEOF h
             unless eof $ do
                 l <- hGetLine h
-                if isPrefixOf "SuperCollider 3 server ready.." l
+                if "SuperCollider 3 server ready.." `isPrefixOf` l
                     then do
                         onPutString handler l
                         fd <- openTransport rtOptions "127.0.0.1"
