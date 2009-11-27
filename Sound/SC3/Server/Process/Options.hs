@@ -35,39 +35,43 @@ instance Enum (Verbosity) where
 -- | Specify general server options used both in realtime and non-realtime
 -- mode.
 data ServerOptions = ServerOptions {
-    serverProgram               :: FilePath,    -- ^ Path to the @scsynth@ program
-    numberOfControlBusChannels  :: Int,         -- ^ Number of allocated control bus channels
-    numberOfAudioBusChannels    :: Int,         -- ^ Number of allocated audio bus channels
-    numberOfInputBusChannels    :: Int,         -- ^ Number of physical input channels
-    numberOfOutputBusChannels   :: Int,         -- ^ Number of physical output channels
-    blockSize                   :: Int,         -- ^ Synthesis block size
-    numberOfSampleBuffers       :: Int,         -- ^ Number of allocated sample buffers
-    maxNumberOfNodes            :: Int,         -- ^ Maximum number of synthesis nodes
-    maxNumberOfSynthDefs        :: Int,         -- ^ Maximum number of synth definitions
-    realtimeMemorySize          :: Int,         -- ^ Realtime memory size in bytes
-    numberOfWireBuffers         :: Int,         -- ^ Number of unit generator connection buffers
-    numberOfRandomSeeds         :: Int,         -- ^ Number of random number generator seeds
-    loadSynthDefs               :: Bool,        -- ^ If 'True', load synth definitions from /synthdefs/ directory on startup
-    verbosity                   :: Verbosity   -- ^ 'Verbosity' level
+    serverProgram               :: FilePath          -- ^ Path to the @scsynth@ program
+  , numberOfControlBusChannels  :: Int               -- ^ Number of allocated control bus channels
+  , numberOfAudioBusChannels    :: Int               -- ^ Number of allocated audio bus channels
+  , numberOfInputBusChannels    :: Int               -- ^ Number of physical input channels
+  , numberOfOutputBusChannels   :: Int               -- ^ Number of physical output channels
+  , blockSize                   :: Int               -- ^ Synthesis block size
+  , numberOfSampleBuffers       :: Int               -- ^ Number of allocated sample buffers
+  , maxNumberOfNodes            :: Int               -- ^ Maximum number of synthesis nodes
+  , maxNumberOfSynthDefs        :: Int               -- ^ Maximum number of synth definitions
+  , realtimeMemorySize          :: Int               -- ^ Realtime memory size in bytes
+  , numberOfWireBuffers         :: Int               -- ^ Number of unit generator connection buffers
+  , numberOfRandomSeeds         :: Int               -- ^ Number of random number generator seeds
+  , loadSynthDefs               :: Bool              -- ^ If 'True', load synth definitions from /synthdefs/ directory on startup
+  , verbosity                   :: Verbosity         -- ^ 'Verbosity' level
+  , ugenPluginPath				:: Maybe [FilePath]  -- ^ List of UGen plugin search paths
+  , restrictedPath              :: Maybe FilePath    -- ^ Sandbox path to restrict OSC command filesystem access
 } deriving (Eq, Show)
 
 -- | Default server options.
 defaultServerOptions :: ServerOptions
 defaultServerOptions = ServerOptions {
-    serverProgram              = "scsynth",
-    numberOfControlBusChannels = 4096,
-    numberOfAudioBusChannels   = 128,
-    numberOfInputBusChannels   = 8,
-    numberOfOutputBusChannels  = 8,
-    blockSize                  = 64,
-    numberOfSampleBuffers      = 1024,
-    maxNumberOfNodes           = 1024,
-    maxNumberOfSynthDefs       = 1024,
-    realtimeMemorySize         = 8192,
-    numberOfWireBuffers        = 64,
-    numberOfRandomSeeds        = 64,
-    loadSynthDefs              = True,
-    verbosity                  = Normal
+    serverProgram              = "scsynth"
+  , numberOfControlBusChannels = 4096
+  , numberOfAudioBusChannels   = 128
+  , numberOfInputBusChannels   = 8
+  , numberOfOutputBusChannels  = 8
+  , blockSize                  = 64
+  , numberOfSampleBuffers      = 1024
+  , maxNumberOfNodes           = 1024
+  , maxNumberOfSynthDefs       = 1024
+  , realtimeMemorySize         = 8192
+  , numberOfWireBuffers        = 64
+  , numberOfRandomSeeds        = 64
+  , loadSynthDefs              = True
+  , verbosity                  = Normal
+  , ugenPluginPath             = Nothing
+  , restrictedPath             = Nothing
 }
 
 $(deriveAccessors ''ServerOptions)

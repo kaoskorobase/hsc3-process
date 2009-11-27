@@ -4,7 +4,8 @@ module Sound.SC3.Server.Process.CommandLine (
 ) where
 
 import Data.Accessor
-import Data.Maybe                       (fromMaybe)
+import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 import Sound.SC3.Server.Process.Options
 
 -- ====================================================================
@@ -33,6 +34,9 @@ instance Option a => Option (Maybe a) where
 instance Option (Verbosity) where
     showOption = showOption . fromEnum
 
+instance Option [FilePath] where
+    showOption = intercalate ":" . map show
+        
 mkOption :: (Eq b, Option b, Show b) => a -> a -> String -> Accessor a b -> [String]
 mkOption defaultOptions options optName accessor =
         if value == defaultValue
@@ -52,10 +56,13 @@ instance CommandLine (ServerOptions) where
             , o "-b" _numberOfSampleBuffers
             , o "-n" _maxNumberOfNodes
             , o "-d" _maxNumberOfSynthDefs
+			, o "-m" _realtimeMemorySize
             , o "-w" _numberOfWireBuffers
             , o "-r" _numberOfRandomSeeds
             , o "-D" _loadSynthDefs
-            , o "-v" _verbosity ]
+            , o "-v" _verbosity
+            , o "-U" _ugenPluginPath
+            , o "-P" _restrictedPath ]
         where
             o :: (Eq b, Option b, Show b) => String -> Accessor ServerOptions b -> [String]
             o = mkOption defaultServerOptions options

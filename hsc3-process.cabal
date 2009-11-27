@@ -25,7 +25,10 @@ library
   other-modules:    Sound.SC3.Server.Process.Accessor,
                     Sound.SC3.Server.Process.CommandLine
 
-  extensions:       FlexibleContexts, TemplateHaskell, TypeSynonymInstances
+  extensions:       FlexibleContexts
+                  , FlexibleInstances
+                  , TemplateHaskell
+                  , TypeSynonymInstances
  
   build-depends:    base >= 3 && < 5,
                     ConfigFile == 1.0.*,
