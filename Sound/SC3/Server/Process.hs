@@ -3,32 +3,31 @@
 module Sound.SC3.Server.Process (
     module Sound.SC3.Server.Process.Options,
     OpenTransport(..),
-    commandLine,
-    EventHandler(..),
-    _onBoot,
-    _onPutString,
-    _onPutError,
-    defaultEventHandler,
+    OutputHandler(..),
+    defaultOutputHandler,
     withSynth,
     withNRT
 ) where
 
-import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP)
-import Control.Concurrent                   (forkIO)
+import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP, send)
+import Control.Concurrent                   (ThreadId, forkIO, myThreadId, throwTo)
+import Control.Exception                    (finally)
 import Control.Monad                        (unless)
 import Prelude hiding                       (catch)
 import Data.List                            (isPrefixOf)
 
+import Sound.SC3                            (quit)
 import Sound.SC3.Server.Process.Accessor    (deriveAccessors)
 import Sound.SC3.Server.Process.Options
 import Sound.SC3.Server.Process.CommandLine
 
-import System.Exit                          (ExitCode)
+import System.Exit                          (ExitCode(..))
 import System.IO                            (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
-import System.Process                       (runInteractiveProcess, waitForProcess)
+import System.Process                       (ProcessHandle, runInteractiveProcess, waitForProcess)
 
 -- | Helper class for polymorphic opening of network connections.
 class OpenTransport t where
+    -- | Open a transport to scsynth based on the given RTOptions and a hostname.
     openTransport :: RTOptions -> String -> IO t
 
 -- | Check wether a network port is within the valid range (0, 65535]
@@ -43,25 +42,19 @@ instance OpenTransport (TCP) where
     openTransport options server = openTCP server (checkPort "TCP" $ tcpPortNumber options)
 
 -- ====================================================================
--- * Event handler
+-- * Output handler
 
--- | Event handler for handling I/O with external @scsynth@ processes,
--- parameterized by the I/O handle used for sending OSC commands to the
--- server.
-data EventHandler t = EventHandler {
-    onPutString :: String -> IO (),     -- ^ Handle one line of normal output
-    onPutError  :: String -> IO (),     -- ^ Handle one line of error output
-    onBoot      :: t -> IO ()           -- ^ Executed with the OSC handle after the server has booted
+-- | Handle output of external @scsynth@ processes.
+data OutputHandler = OutputHandler {
+    onPutString :: String -> IO ()     -- ^ Handle one line of normal output
+  , onPutError  :: String -> IO ()     -- ^ Handle one line of error output
 }
 
-$(deriveAccessors ''EventHandler)
-
--- | Default event handler, writing to stdout and stderr, respectively.
-defaultEventHandler :: EventHandler t
-defaultEventHandler = EventHandler {
-    onPutString = hPutStrLn stdout,
-    onPutError  = hPutStrLn stderr,
-    onBoot      = const (return ())
+-- | Default IO handler, writing to stdout and stderr, respectively.
+defaultOutputHandler :: OutputHandler
+defaultOutputHandler = OutputHandler {
+    onPutString = hPutStrLn stdout
+  , onPutError  = hPutStrLn stderr
 }
 
 -- ====================================================================
@@ -70,44 +63,51 @@ defaultEventHandler = EventHandler {
 pipeOutput :: (String -> IO ()) -> Handle -> IO ()
 pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
 
+watchProcess :: ProcessHandle -> ThreadId -> IO ()
+watchProcess pid tid = do
+    e <- waitForProcess pid
+    case e of
+        ExitSuccess -> return ()
+        ex          -> throwTo tid ex
+
 -- ====================================================================
 -- * Realtime scsynth execution
 
--- | Execute a realtime instance of @scsynth@ with 'Transport' t and return
--- 'ExitCode' when the process exists.
+-- | Execute a realtime instance of @scsynth@ with 'Transport' t.
 --
--- /NOTE/: When compiling executables with GHC, the @-threaded@ option should be
--- passed, otherwise the I\/O handlers will not work correctly.
+-- The spawned @scsynth@ is sent a @\/quit@ message after the supplied action
+-- returns.
+--
+-- /NOTE/: When compiling executables with GHC, the @-threaded@ option should
+-- be passed, otherwise the I\/O handlers will not work correctly.
 withSynth :: (Transport t, OpenTransport t) =>
     ServerOptions
  -> RTOptions
- -> EventHandler t
- -> IO ExitCode
-withSynth serverOptions rtOptions handler = do
+ -> OutputHandler
+ -> (t -> IO a)
+ -> IO a
+withSynth serverOptions rtOptions handler action = do
         (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-        forkIO $ putStdout0 hOut
-        forkIO $ putStderr  hErr
-        waitForProcess hProc
+        forkIO $ putStderr hErr
+        myThreadId >>= forkIO . watchProcess hProc
+        loop hOut
     where
         (exe:args) = commandLine serverOptions rtOptions
-        putStdout0 h = do
-            eof <- hIsEOF h
-            unless eof $ do
-                l <- hGetLine h
-                if "SuperCollider 3 server ready.." `isPrefixOf` l
-                    then do
-                        onPutString handler l
-                        fd <- openTransport rtOptions "127.0.0.1"
-                        forkIO $ onBoot handler fd
-                        -- Spawn more efficient output handler
-                        forkIO $ putStdout h
-                        return ()
-                    else do
-                        onPutString handler l
-                        putStdout0 h -- recurse
+        loop h = do
+            l <- hGetLine h
+            if "SuperCollider 3 server ready.." `isPrefixOf` l
+                then do
+                    onPutString handler l
+                    -- Spawn output handler
+                    forkIO $ putStdout h
+                    fd <- openTransport rtOptions "127.0.0.1"
+                    action fd `finally` send fd quit
+                else do
+                    onPutString handler l
+                    loop h -- recurse
         putStdout = pipeOutput (onPutString handler)
         putStderr = pipeOutput (onPutError  handler)
-    
+
 -- ====================================================================
 -- * Non-Realtime scsynth execution
 
@@ -116,14 +116,15 @@ withSynth serverOptions rtOptions handler = do
 withNRT ::
     ServerOptions
  -> NRTOptions
- -> EventHandler Handle
- -> IO ExitCode
-withNRT serverOptions nrtOptions handler = do
+ -> OutputHandler
+ -> (Handle -> IO a)
+ -> IO a
+withNRT serverOptions nrtOptions handler action = do
         (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStdout hOut
         forkIO $ putStderr hErr
-        forkIO $ onBoot handler hIn
-        waitForProcess hProc
+        myThreadId >>= forkIO . watchProcess hProc
+        action hIn
     where
         (exe:args) = commandLine serverOptions nrtOptions { commandFilePath = Nothing }
         putStdout = pipeOutput (onPutString handler)

@@ -30,17 +30,21 @@ library
                   , TemplateHaskell
                   , TypeSynonymInstances
  
-  build-depends:    base >= 3 && < 5,
-                    ConfigFile == 1.0.*,
-                    containers == 0.2.*,
-                    data-accessor == 0.2.*,
-                    data-accessor-template == 0.2.*,
-                    hosc == 0.8.*,
-                    mtl == 1.1.*,
-                    process == 1.0.*,
-                    template-haskell == 2.3.*,
-                    transformers == 0.1.*
+  build-depends:    base >= 3 && < 5
+                  , ConfigFile >= 1
+                  , containers >= 0.2
+                  , data-accessor >= 0.2
+                  , data-accessor-template >= 0.2
+                  , hosc >= 0.7
+                  , hsc3
+                  , mtl >= 1.1
+                  , process >= 1.0
+                  , template-haskell >= 2
+                  -- , testrunner
+                  , transformers
 
+  ghc-options:      -Wall
+ 
 source-repository head
   type:             darcs
   location:         http://code.haskell.org/~StefanKersten/code/hsc3-process/
