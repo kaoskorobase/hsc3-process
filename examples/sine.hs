@@ -1,7 +1,8 @@
+import Control.Concurrent
 import Sound.OpenSoundControl (OSC(..), Time(..), UDP, pauseThread)
 import Sound.SC3
 import Sound.SC3.Server.Process
-import Data.Accessor
+import System.Exit
 
 sine :: UGen
 sine = out 0 (mce2 (s 390) (s 400))
@@ -11,10 +12,8 @@ scmain :: UDP -> IO ()
 scmain fd = do
     reset fd
     play fd sine
-    pauseThread 4
+    pauseThread 10
     send fd quit
 
 main :: IO ()   
-main = do
-    withSynth defaultServerOptions defaultRTOptionsUDP (defaultEventHandler { onBoot = scmain })
-    return ()
+main = withSynth defaultServerOptions defaultRTOptionsUDP defaultOutputHandler scmain
