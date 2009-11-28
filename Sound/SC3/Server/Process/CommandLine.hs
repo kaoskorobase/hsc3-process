@@ -32,11 +32,11 @@ instance Option a => Option (Maybe a) where
     showOption (Just a) = showOption a
 
 instance Option (Verbosity) where
-    showOption = showOption . fromEnum
+    showOption = showOption . ((-)2) . fromEnum
 
 instance Option [FilePath] where
     showOption = intercalate ":" . map show
-        
+
 mkOption :: (Eq b, Option b, Show b) => a -> a -> String -> Accessor a b -> [String]
 mkOption defaultOptions options optName accessor =
         if value == defaultValue

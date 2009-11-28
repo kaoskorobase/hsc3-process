@@ -11,23 +11,7 @@ data Verbosity =
   | Verbose
   | VeryVerbose
   | ExtremelyVerbose
-  deriving (Eq, Read, Show)
-
--- 'Enum' instance for 'Verbosity' for conversion to a commandline option.
-instance Enum (Verbosity) where
-    fromEnum Silent             = -2
-    fromEnum Quiet              = -1
-    fromEnum Normal             =  0
-    fromEnum Verbose            =  1
-    fromEnum VeryVerbose        =  2
-    fromEnum ExtremelyVerbose   =  4
-
-    toEnum (-1)                 = Quiet
-    toEnum 0                    = Normal
-    toEnum 1                    = Verbose
-    toEnum 2                    = VeryVerbose
-    toEnum x | x >= 4           = ExtremelyVerbose
-    toEnum _                    = Silent
+  deriving (Enum, Eq, Read, Show)
 
 -- ====================================================================
 -- * Server options
