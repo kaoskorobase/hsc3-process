@@ -1,6 +1,7 @@
 module Sound.SC3.Server.Process.CommandLine (
-    CommandLine(..),
-    commandLine
+    rtCommandLine
+  , nrtCommandLine
+  , mkOption
 ) where
 
 import Data.Accessor
@@ -37,8 +38,13 @@ instance Option (Verbosity) where
 instance Option [FilePath] where
     showOption = intercalate ":" . map show
 
-mkOption :: (Eq b, Option b, Show b) => a -> a -> String -> Accessor a b -> [String]
-mkOption defaultOptions options optName accessor =
+data ToOption a = forall b . Option b => ToOption (a -> b)
+
+toOption :: a -> ToOption a -> String
+toOption a (ToOption f) = showOption (f a)
+
+mkOption_ :: (Eq b, Option b, Show b) => a -> a -> String -> Accessor a b -> [String]
+mkOption_ defaultOptions options optName accessor =
         if value == defaultValue
         then []
         else [optName, showOption value]
@@ -46,53 +52,67 @@ mkOption defaultOptions options optName accessor =
         defaultValue = defaultOptions ^. accessor
         value        = options ^. accessor
 
-instance CommandLine (ServerOptions) where
-    argumentList options = concat [ 
-              o "-c" _numberOfControlBusChannels
-            , o "-a" _numberOfAudioBusChannels
-            , o "-i" _numberOfInputBusChannels
-            , o "-o" _numberOfOutputBusChannels
-            , o "-z" _blockSize
-            , o "-b" _numberOfSampleBuffers
-            , o "-n" _maxNumberOfNodes
-            , o "-d" _maxNumberOfSynthDefs
-			, o "-m" _realtimeMemorySize
-            , o "-w" _numberOfWireBuffers
-            , o "-r" _numberOfRandomSeeds
-            , o "-D" _loadSynthDefs
-            , o "-v" _verbosity
-            , o "-U" _ugenPluginPath
-            , o "-P" _restrictedPath ]
-        where
-            o :: (Eq b, Option b, Show b) => String -> Accessor ServerOptions b -> [String]
-            o = mkOption defaultServerOptions options
+mkOption :: a -> a -> String -> ToOption a -> Maybe (String, String)
+mkOption defaultOptions options optName accessor =
+        if value == defaultValue
+        then Nothing
+        else Just (optName, value)
+    where
+        defaultValue = defaultOptions `toOption` accessor
+        value        = options `toOption` accessor
 
-instance CommandLine (RTOptions) where
-    argumentList options = concat [
-              o "-u" _udpPortNumber
-            , o "-t" _tcpPortNumber
-            , o "-R" _useZeroconf
-            , o "-H" _hardwareDeviceName
-            , o "-Z" _hardwareBufferSize
-            , o "-S" _hardwareSampleRate
-            , o "-l" _maxNumberOfLogins
-            , o "-p" _sessionPassword
-            , o "-I" _inputStreamsEnabled
-            , o "-O" _outputStreamsEnabled ]
-        where
-            o :: (Eq b, Option b, Show b) => String -> Accessor RTOptions b -> [String]
-            o = mkOption defaultRTOptions options
+mkOptions :: a -> a -> [(String, ToOption a)] -> [(String, String)]
+mkOptions defaultOptions options assocs = [x | Just x <- map (uncurry $ mkOption defaultOptions options) assocs]
 
-instance CommandLine (NRTOptions) where
-    argumentList options =
-        "-N" : map ($ options) [
-              fromMaybe "_" . commandFilePath
-            , fromMaybe "_" . inputFilePath
-            , outputFilePath
-            , showOption . outputSampleRate
-            , outputHeaderFormat
-            , outputSampleFormat ]
+flattenOptions :: [(a, a)] -> [a]
+flattenOptions [] = []
+flattenOptions ((a, b):xs) = a : b : flattenOptions xs
 
--- | Construct the scsynth command line from 'ServerOptions' and either 'RTOptions' or 'NRTOptions'.
-commandLine :: (CommandLine a) => ServerOptions -> a -> [String]
-commandLine serverOptions options = (serverProgram serverOptions : argumentList serverOptions) ++ argumentList options
+mkServerOptions :: ServerOptions -> [String]
+mkServerOptions options = (flattenOptions.mkOptions defaultServerOptions options) [ 
+    ("-c" , ToOption numberOfControlBusChannels)
+  , ("-a" , ToOption numberOfAudioBusChannels  )
+  , ("-i" , ToOption numberOfInputBusChannels  )
+  , ("-o" , ToOption numberOfOutputBusChannels )
+  , ("-z" , ToOption blockSize                 )
+  , ("-b" , ToOption numberOfSampleBuffers     )
+  , ("-n" , ToOption maxNumberOfNodes          )
+  , ("-d" , ToOption maxNumberOfSynthDefs      )
+  , ("-m" , ToOption realtimeMemorySize        )
+  , ("-w" , ToOption numberOfWireBuffers       )
+  , ("-r" , ToOption numberOfRandomSeeds       )
+  , ("-D" , ToOption loadSynthDefs             )
+  , ("-v" , ToOption verbosity                 )
+  , ("-U" , ToOption ugenPluginPath            )
+  , ("-P" , ToOption restrictedPath            ) ]
+
+mkRTOptions :: RTOptions -> [String]
+mkRTOptions options = (flattenOptions.mkOptions defaultRTOptions options) [
+    ("-u" , ToOption udpPortNumber        )
+  , ("-t" , ToOption tcpPortNumber        )
+  , ("-R" , ToOption useZeroconf          )
+  , ("-H" , ToOption hardwareDeviceName   )
+  , ("-Z" , ToOption hardwareBufferSize   )
+  , ("-S" , ToOption hardwareSampleRate   )
+  , ("-l" , ToOption maxNumberOfLogins    )
+  , ("-p" , ToOption sessionPassword      )
+  , ("-I" , ToOption inputStreamsEnabled  )
+  , ("-O" , ToOption outputStreamsEnabled ) ]
+
+mkNRTOptions :: NRTOptions -> [String]
+mkNRTOptions options =
+    "-N" : map ($ options) [
+          fromMaybe "_" . commandFilePath
+        , fromMaybe "_" . inputFilePath
+        , outputFilePath
+        , showOption . outputSampleRate
+        , outputHeaderFormat
+        , outputSampleFormat ]
+
+-- | Construct the scsynth command line from 'ServerOptions' and 'RTOptions'.
+rtCommandLine :: ServerOptions -> RTOptions -> [String]
+rtCommandLine serverOptions rtOptions = (serverProgram serverOptions : mkServerOptions serverOptions) ++ mkRTOptions rtOptions
+
+-- | Construct the scsynth command line from 'ServerOptions' and 'NRTOptions'.
+nrtCommandLine :: ServerOptions -> NRTOptions -> [String]
+nrtCommandLine serverOptions nrtOptions = (serverProgram serverOptions : mkServerOptions serverOptions) ++ mkNRTOptions nrtOptions

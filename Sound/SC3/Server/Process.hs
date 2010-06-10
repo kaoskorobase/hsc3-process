@@ -92,7 +92,7 @@ withSynth serverOptions rtOptions handler action = do
         myThreadId >>= forkIO . watchProcess hProc
         loop hOut
     where
-        (exe:args) = commandLine serverOptions rtOptions
+        (exe:args) = rtCommandLine serverOptions rtOptions
         loop h = do
             l <- hGetLine h
             if "SuperCollider 3 server ready.." `isPrefixOf` l
@@ -126,7 +126,7 @@ withNRT serverOptions nrtOptions handler action = do
         myThreadId >>= forkIO . watchProcess hProc
         action hIn
     where
-        (exe:args) = commandLine serverOptions nrtOptions { commandFilePath = Nothing }
+        (exe:args) = nrtCommandLine serverOptions nrtOptions { commandFilePath = Nothing }
         putStdout = pipeOutput (onPutString handler)
         putStderr = pipeOutput (onPutString handler)
 
