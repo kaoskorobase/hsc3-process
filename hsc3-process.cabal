@@ -36,11 +36,10 @@ library
                   , data-accessor >= 0.2
                   , data-accessor-template >= 0.2
                   , hosc >= 0.7
-                  , hsc3
+                  , hsc3 >= 0.7
                   , mtl >= 1.1
                   , process >= 1.0
                   , template-haskell >= 2
-                  -- , testrunner
                   , transformers
 
   ghc-options:      -Wall
