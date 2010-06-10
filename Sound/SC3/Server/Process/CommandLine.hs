@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification, FlexibleInstances, TypeSynonymInstances #-}
 module Sound.SC3.Server.Process.CommandLine (
     rtCommandLine
   , nrtCommandLine

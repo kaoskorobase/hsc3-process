@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Sound.SC3.Server.Process.Options where
 
 import Data.Accessor                        (Accessor)

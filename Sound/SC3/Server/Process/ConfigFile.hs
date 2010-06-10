@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- | Read server options from configuraton file.
 module Sound.SC3.Server.Process.ConfigFile (
     fromAssocs,
