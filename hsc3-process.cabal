@@ -20,10 +20,10 @@ extra-source-files: examples/config.hs
 
 library
   exposed-modules:  Sound.SC3.Server.Process
+                    Sound.SC3.Server.Process.CommandLine
                     Sound.SC3.Server.Process.ConfigFile
                     Sound.SC3.Server.Process.Options
-  other-modules:    Sound.SC3.Server.Process.Accessor,
-                    Sound.SC3.Server.Process.CommandLine
+  other-modules:    Sound.SC3.Server.Process.Accessor
 
   build-depends:    base >= 3 && < 5
                   , ConfigFile >= 1
