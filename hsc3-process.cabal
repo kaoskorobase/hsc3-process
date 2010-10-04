@@ -1,5 +1,5 @@
 name:               hsc3-process
-version:            0.2.1
+version:            0.3.0
 synopsis:           Create and control scsynth processes
 description:        Create and control scsynth processes.
 license:            GPL
