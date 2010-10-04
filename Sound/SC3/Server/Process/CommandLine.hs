@@ -37,7 +37,7 @@ instance Option (Verbosity) where
     showOption = showOption . ((-)2) . fromEnum
 
 instance Option [FilePath] where
-    showOption = intercalate ":" . map show
+    showOption = intercalate ":"
 
 data ToOption a = forall b . Option b => ToOption (a -> b)
 
