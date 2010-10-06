@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
 module Sound.SC3.Server.Process (
@@ -10,8 +11,9 @@ module Sound.SC3.Server.Process (
 ) where
 
 import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP, send)
-import Control.Concurrent                   (ThreadId, forkIO, myThreadId, throwTo)
-import Control.Exception                    (finally)
+import Control.Concurrent
+import Control.Concurrent.MVar
+import Control.Exception
 import Control.Monad                        (unless)
 import Prelude hiding                       (catch)
 import Data.List                            (isPrefixOf)
@@ -63,13 +65,6 @@ defaultOutputHandler = OutputHandler {
 pipeOutput :: (String -> IO ()) -> Handle -> IO ()
 pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
 
-watchProcess :: ProcessHandle -> ThreadId -> IO ()
-watchProcess pid tid = do
-    e <- waitForProcess pid
-    case e of
-        ExitSuccess -> return ()
-        ex          -> throwTo tid ex
-
 -- ====================================================================
 -- * Realtime scsynth execution
 
@@ -89,22 +84,46 @@ withSynth :: (Transport t, OpenTransport t) =>
 withSynth serverOptions rtOptions handler action = do
         (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStderr hErr
-        myThreadId >>= forkIO . watchProcess hProc
-        loop hOut
+        result <- newEmptyMVar
+        thread <- forkIO (loop hOut result)
+        exitCode <- waitForProcess hProc
+        case exitCode of
+            ExitSuccess -> do
+                a <- readMVar result
+                case a of
+                    Left e  -> throw e
+                    Right a -> return a
+            ExitFailure _ -> do
+                killThread thread
+                throw (toException exitCode)
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
-        loop h = do
-            l <- hGetLine h
-            if "SuperCollider 3 server ready.." `isPrefixOf` l
-                then do
-                    onPutString handler l
-                    -- Spawn output handler
-                    forkIO $ putStdout h
-                    fd <- openTransport rtOptions "127.0.0.1"
-                    action fd `finally` send fd quit
-                else do
-                    onPutString handler l
-                    loop h -- recurse
+        loop h result = do
+            l <- try (hGetLine h)
+            case l of
+                Left (ex :: IOException) -> returnExc (toException ex)
+                Right l ->
+                    if "SuperCollider 3 server ready." `isPrefixOf` l
+                        then do
+                            e <- try (onPutString handler l)
+                            case e of
+                                Left (ex :: IOException) -> returnExc (toException ex)
+                                _                        -> do
+                                    forkIO $ putStdout h
+                                    fd <- openTransport rtOptions "127.0.0.1"
+                                    a <- try (action fd)
+                                    send fd quit
+                                    case a of
+                                        Left (ex :: SomeException) -> returnExc (toException ex)
+                                        Right a -> returnRes a
+                        else do
+                            e <- try (onPutString handler l)
+                            case e of
+                                Left (ex :: IOException) -> returnExc (toException ex)
+                                _                        -> loop h result -- recurse
+            where
+                returnRes a = putMVar result (Right a)
+                returnExc e = putMVar result (Left e)
         putStdout = pipeOutput (onPutString handler)
         putStderr = pipeOutput (onPutError  handler)
 
@@ -123,8 +142,22 @@ withNRT serverOptions nrtOptions handler action = do
         (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStdout hOut
         forkIO $ putStderr hErr
-        myThreadId >>= forkIO . watchProcess hProc
-        action hIn
+        result <- newEmptyMVar
+        thread <- forkIO $ do
+            a <- try (action hIn)
+            case a of
+                Left (ex :: SomeException) -> putMVar result (Left ex)
+                _                          -> putMVar result a
+        exitCode <- waitForProcess hProc
+        case exitCode of
+            ExitSuccess -> do
+                a <- readMVar result
+                case a of
+                    Left e  -> throw e
+                    Right a -> return a
+            ExitFailure _ -> do
+                killThread thread
+                throw (toException exitCode)
     where
         (exe:args) = nrtCommandLine serverOptions nrtOptions { commandFilePath = Nothing }
         putStdout = pipeOutput (onPutString handler)
