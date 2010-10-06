@@ -16,4 +16,11 @@ scmain fd = do
     send fd quit
 
 main :: IO ()   
-main = withSynth defaultServerOptions defaultRTOptionsUDP defaultOutputHandler scmain
+main = withSynth
+        (defaultServerOptions
+            { serverProgram = "scsynth"
+            , loadSynthDefs = False })
+        (defaultRTOptionsUDP
+            { udpPortNumber = 2278 })
+        defaultOutputHandler
+        scmain
