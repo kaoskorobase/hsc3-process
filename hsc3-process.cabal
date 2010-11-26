@@ -19,25 +19,28 @@ extra-source-files: examples/config.hs
                     examples/sine.hs
 
 library
-  exposed-modules:  Sound.SC3.Server.Process
+  exposed-modules:  Sound.SC3.Server.Internal
+                    Sound.SC3.Server.Options
+                    Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.CommandLine
                     Sound.SC3.Server.Process.ConfigFile
-                    Sound.SC3.Server.Process.Options
   other-modules:    Sound.SC3.Server.Process.Accessor
 
   build-depends:    base >= 3 && < 5
+                  , bindings-sc3
+                  , bytestring >= 0.8 && < 0.10
                   , ConfigFile >= 1
                   , containers >= 0.2
                   , data-accessor >= 0.2
                   , data-accessor-template >= 0.2
-                  , hosc >= 0.7
-                  , hsc3 >= 0.7
+                  , hosc >= 0.7 && < 0.9
+                  , hsc3 >= 0.7 && < 0.9
                   , mtl >= 1.1
                   , process >= 1.0
                   , template-haskell >= 2
                   , transformers
 
-  ghc-options:      -Wall
+  ghc-options:      -W
  
 source-repository head
   type:             darcs

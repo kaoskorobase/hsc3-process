@@ -2,35 +2,33 @@
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
 module Sound.SC3.Server.Process (
-    module Sound.SC3.Server.Process.Options,
+    module Sound.SC3.Server.Options,
     OpenTransport(..),
     OutputHandler(..),
     defaultOutputHandler,
+    withTransport,
     withSynth,
     withNRT
 ) where
 
 import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP, send)
 import Control.Concurrent
-import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad                        (unless)
 import Prelude hiding                       (catch)
 import Data.List                            (isPrefixOf)
 
 import Sound.SC3                            (quit)
-import Sound.SC3.Server.Process.Accessor    (deriveAccessors)
-import Sound.SC3.Server.Process.Options
+import Sound.SC3.Server.Options
 import Sound.SC3.Server.Process.CommandLine
+import Sound.SC3.Server.Transport
 
 import System.Exit                          (ExitCode(..))
 import System.IO                            (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
-import System.Process                       (ProcessHandle, runInteractiveProcess, waitForProcess)
+import System.Process                       (runInteractiveProcess, waitForProcess)
 
--- | Helper class for polymorphic opening of network connections.
-class OpenTransport t where
-    -- | Open a transport to scsynth based on the given RTOptions and a hostname.
-    openTransport :: RTOptions -> String -> IO t
+hostName :: Maybe String -> String
+hostName = maybe "127.0.0.1" id
 
 -- | Check wether a network port is within the valid range (0, 65535]
 checkPort :: String -> Int -> Int
@@ -38,10 +36,10 @@ checkPort tag p | p <= 0 || p > 65535 = error ("Invalid " ++ tag ++ " port " ++ 
 checkPort _ p                         = p
 
 instance OpenTransport (UDP) where
-    openTransport options server = openUDP server (checkPort "UDP" $ udpPortNumber options)
+    openTransport _ options server = openUDP (hostName server) (checkPort "UDP" $ udpPortNumber options)
 
 instance OpenTransport (TCP) where
-    openTransport options server = openTCP server (checkPort "TCP" $ tcpPortNumber options)
+    openTransport _ options server = openTCP (hostName server) (checkPort "TCP" $ tcpPortNumber options)
 
 -- ====================================================================
 -- * Output handler
@@ -67,6 +65,15 @@ pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
 
 -- ====================================================================
 -- * Realtime scsynth execution
+
+withTransport :: (Transport t, OpenTransport t) =>
+    ServerOptions
+ -> RTOptions
+ -> (t -> IO a)
+ -> IO a
+withTransport serverOptions rtOptions action = do
+    fd <- openTransport serverOptions rtOptions Nothing
+    action fd
 
 -- | Execute a realtime instance of @scsynth@ with 'Transport' t.
 --
@@ -110,8 +117,8 @@ withSynth serverOptions rtOptions handler action = do
                                 Left (ex :: IOException) -> returnExc (toException ex)
                                 _                        -> do
                                     forkIO $ putStdout h
-                                    fd <- openTransport rtOptions "127.0.0.1"
-                                    a <- try (action fd)
+                                    fd <- openTransport serverOptions rtOptions Nothing
+                                    a <- try (action fd >>= evaluate)
                                     send fd quit
                                     case a of
                                         Left (ex :: SomeException) -> returnExc (toException ex)

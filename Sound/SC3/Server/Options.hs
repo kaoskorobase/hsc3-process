@@ -1,8 +1,49 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Sound.SC3.Server.Process.Options where
+module Sound.SC3.Server.Options (
+    Verbosity(..)
+  , ServerOptions(..)
+  , defaultServerOptions
+  , _serverProgram
+  , _numberOfControlBusChannels
+  , _numberOfAudioBusChannels
+  , _numberOfInputBusChannels
+  , _numberOfOutputBusChannels
+  , _blockSize
+  , _numberOfSampleBuffers
+  , _maxNumberOfNodes
+  , _maxNumberOfSynthDefs
+  , _realtimeMemorySize
+  , _numberOfWireBuffers
+  , _numberOfRandomSeeds
+  , _loadSynthDefs
+  , _verbosity
+  , _ugenPluginPath
+  , _restrictedPath
+  , RTOptions(..)
+  , defaultRTOptions
+  , defaultRTOptionsUDP
+  , defaultRTOptionsTCP
+  , _udpPortNumber
+  , _tcpPortNumber
+  , _useZeroconf
+  , _maxNumberOfLogins
+  , _sessionPassword
+  , _hardwareDeviceName
+  , _hardwareBufferSize
+  , _hardwareSampleRate
+  , _inputStreamsEnabled
+  , _outputStreamsEnabled
+  , NRTOptions(..)
+  , defaultNRTOptions
+  , _commandFilePath
+  , _inputFilePath
+  , _outputFilePath
+  , _outputSampleRate
+  , _outputHeaderFormat
+  , _outputSampleFormat
+) where
 
-import Data.Accessor                        (Accessor)
-import Sound.SC3.Server.Process.Accessor    (deriveAccessors)
+import Sound.SC3.Server.Process.Accessor (deriveAccessors)
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -12,7 +53,22 @@ data Verbosity =
   | Verbose
   | VeryVerbose
   | ExtremelyVerbose
-  deriving (Enum, Eq, Read, Show)
+  deriving (Eq, Read, Show)
+
+instance Enum Verbosity where
+    fromEnum Silent           = -2
+    fromEnum Quiet            = -1
+    fromEnum Normal           = 0
+    fromEnum Verbose          = 1
+    fromEnum VeryVerbose      = 2
+    fromEnum ExtremelyVerbose = 3
+    toEnum (-2)               = Silent
+    toEnum (-1)               = Quiet
+    toEnum 0                  = Normal
+    toEnum 1                  = Verbose
+    toEnum 2                  = VeryVerbose
+    toEnum 3                  = ExtremelyVerbose
+    toEnum _                  = error "Verbosity (toEnum): bad argument"
 
 -- ====================================================================
 -- * Server options
@@ -61,14 +117,6 @@ defaultServerOptions = ServerOptions {
 
 $(deriveAccessors ''ServerOptions)
 
-{-# DEPRECATED realTimeMemorySize "Use `realtimeMemorySize' instead" #-}
-realTimeMemorySize :: ServerOptions -> Int
-realTimeMemorySize = realtimeMemorySize
-
-{-# DEPRECATED _realTimeMemorySize "Use `_realtimeMemorySize' instead" #-}
-_realTimeMemorySize :: Accessor ServerOptions Int
-_realTimeMemorySize = _realtimeMemorySize
-
 -- ====================================================================
 -- * Realtime options
 
@@ -76,17 +124,17 @@ _realTimeMemorySize = _realtimeMemorySize
 -- 'Transport' to be used.
 data RTOptions = RTOptions {
     -- Network control
-    udpPortNumber           :: Int,             -- ^ UDP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
-    tcpPortNumber           :: Int,             -- ^ TCP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
-    useZeroconf             :: Bool,            -- ^ If 'True', publish scsynth service through Zeroconf
-    maxNumberOfLogins       :: Int,             -- ^ Max number of supported logins if 'sessionPassword' is set
-    sessionPassword         :: Maybe String,    -- ^ Session password
-    -- Audio device control
-    hardwareDeviceName      :: Maybe String,    -- ^ Hardware device name (JACK client:server name on Linux)
-    hardwareBufferSize      :: Int,             -- ^ Hardware buffer size (no effect with JACK)
-    hardwareSampleRate      :: Int,             -- ^ Hardware buffer size (no effect with JACK)
-    inputStreamsEnabled     :: Maybe Int,       -- ^ Enabled input streams (CoreAudio only)
-    outputStreamsEnabled    :: Maybe Int        -- ^ Enabled output streams (CoreAudio only)
+    udpPortNumber           :: Int             -- ^ UDP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
+  , tcpPortNumber           :: Int             -- ^ TCP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
+  , useZeroconf             :: Bool            -- ^ If 'True', publish scsynth service through Zeroconf
+  , maxNumberOfLogins       :: Int             -- ^ Max number of supported logins if 'sessionPassword' is set
+  , sessionPassword         :: Maybe String    -- ^ Session password
+  -- Audio device control
+  , hardwareDeviceName      :: Maybe String    -- ^ Hardware device name (JACK client:server name on Linux)
+  , hardwareBufferSize      :: Int             -- ^ Hardware buffer size (no effect with JACK)
+  , hardwareSampleRate      :: Int             -- ^ Hardware buffer size (no effect with JACK)
+  , inputStreamsEnabled     :: Maybe Int       -- ^ Enabled input streams (CoreAudio only)
+  , outputStreamsEnabled    :: Maybe Int       -- ^ Enabled output streams (CoreAudio only)
 } deriving (Eq, Show)
 
 -- | Default realtime server options.
@@ -141,4 +189,3 @@ defaultNRTOptions = NRTOptions {
 }
 
 $(deriveAccessors ''NRTOptions)
-

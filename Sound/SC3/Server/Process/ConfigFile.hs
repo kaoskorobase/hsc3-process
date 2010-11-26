@@ -9,7 +9,7 @@ import Control.Monad.Error              (MonadError)
 import Control.Monad.Trans.State        (StateT, evalStateT, execStateT)
 import Data.Accessor
 import Sound.OpenSoundControl           (TCP, UDP)
-import Sound.SC3.Server.Process.Options
+import Sound.SC3.Server.Options
 import Data.ConfigFile                  (CPError, OptionSpec)
 import Data.Map                         (Map)
 import qualified Data.Map               as Map
@@ -51,6 +51,8 @@ getServerOptions m = flip execStateT defaultServerOptions $ do
     set m "numberOfRandomSeeds"        _numberOfRandomSeeds
     set m "loadSynthDefs"              _loadSynthDefs
     set m "verbosity"                  _verbosity
+    set m "ugenPluginPath"             _ugenPluginPath
+    set m "restrictedPath"             _restrictedPath
 
 -- | Get 'RTOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultRTOptions'.
@@ -107,6 +109,8 @@ assocsServerOptions options = flip evalStateT options $ sequence [
     , get "numberOfRandomSeeds"        _numberOfRandomSeeds
     , get "loadSynthDefs"              _loadSynthDefs
     , get "verbosity"                  _verbosity
+    , get "ugenPluginPath"             _ugenPluginPath
+    , get "restrictedPath"             _restrictedPath
     ]
 
 -- | Convert 'RTOptions' to association list.

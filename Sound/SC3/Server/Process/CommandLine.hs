@@ -8,7 +8,7 @@ module Sound.SC3.Server.Process.CommandLine (
 import Data.Accessor
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
-import Sound.SC3.Server.Process.Options
+import Sound.SC3.Server.Options
 
 -- ====================================================================
 -- scsynth commandline options
@@ -34,7 +34,7 @@ instance Option a => Option (Maybe a) where
     showOption (Just a) = showOption a
 
 instance Option (Verbosity) where
-    showOption = showOption . ((-)2) . fromEnum
+    showOption = showOption . fromEnum
 
 instance Option [FilePath] where
     showOption = intercalate ":"
