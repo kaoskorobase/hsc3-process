@@ -1,10 +1,11 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 module Sound.SC3.Server.Internal (
     InternalTransport
+  , withInternal
 ) where
 
 import           Bindings.Sound.SC3
 import           Control.Concurrent.Chan
+import           Control.Exception (bracket)
 import           Control.Monad
 import           Control.Monad.State
 import qualified Data.ByteString as BS
@@ -20,47 +21,52 @@ import           Foreign.StablePtr
 import           Sound.OpenSoundControl as OSC
 import qualified Sound.SC3 as SC
 import           Sound.SC3.Server.Options
-import           Sound.SC3.Server.Transport
-
-type World = Ptr C'World
-type ReplyAddress = Ptr C'ReplyAddress
-type ReplyFunc = ReplyAddress -> Ptr CChar -> CInt -> IO ()
-
-foreign import ccall "wrapper"
-    mkReplyFunc :: ReplyFunc -> IO (FunPtr ReplyFunc)
+import           Sound.SC3.Server.Process (OutputHandler(..))
 
 data InternalTransport = InternalTransport {
-    world :: World
-  , recvChan :: Chan OSC
+    world         :: Ptr C'World
+  , recvChan      :: Chan OSC
+  , replyFunc     :: C'ReplyFunc
+  , replyFuncData :: StablePtr (Chan OSC)
+  , printFunc     :: C'HaskellPrintFunc
   }
 
-openIT :: Ptr C'WorldOptions -> IO InternalTransport
-openIT options = do
-    -- w <- alloca $ \ptr -> do
-    --         ptr `poke` options
-    --         c'World_New ptr
+withInternal ::
+    ServerOptions
+ -> RTOptions
+ -> OutputHandler
+ -> (InternalTransport -> IO a)
+ -> IO a
+withInternal serverOptions rtOptions handler =
+    bracket (withWorldOptions (newIT handler) serverOptions rtOptions)
+            close
+
+newIT :: OutputHandler -> Ptr C'WorldOptions -> IO InternalTransport
+newIT handler options = do
+    pf <- mk'HaskellPrintFunc (\cs -> mapM_ (onPutString handler) . lines =<< peekCString cs)
+    c'SetHaskellPrintFunc pf
     w <- c'World_New options
     c <- newChan
-    return $ InternalTransport w c
+    f <- mk'ReplyFunc it_replyFunc
+    p <- newStablePtr c
+    return $ InternalTransport w c f p pf
 
-it_replyFunc :: ReplyAddress -> Ptr CChar -> CInt -> IO ()
+it_replyFunc :: Ptr C'ReplyAddress -> Ptr CChar -> CInt -> IO ()
 it_replyFunc replyAddress cbuf csize = do
-    -- buf <- BS.create (fromIntegral size) $ \ptr ->
-    --     copyBytes ptr (castPtr cbuf) size
+    -- putStrLn $ "it_replyFunc: " ++ show (replyAddress, cbuf, csize)
     buf <- BS.packCStringLen (cbuf, fromIntegral csize)
     ptr <- liftM castPtrToStablePtr (c'ReplyAddress_ReplyData replyAddress)
-    (f, t) <- deRefStablePtr ptr
+    chan <- deRefStablePtr ptr
     let osc = decodeOSC (BL.fromChunks [buf])
     -- putStrLn $ "it_replyFunc: " ++ show osc
-    writeChan (recvChan t) osc
-    freeHaskellFunPtr f
-    freeStablePtr ptr
+    writeChan chan osc
 
 copyChunks :: Ptr CChar -> [BS.ByteString] -> IO ()
 copyChunks dst = foldM_ f 0
     where
         f i b = do
             let (fp, o, n) = BS.toForeignPtr b
+            -- putStrLn $ "copyChunks " ++ show (i, o, n)
             withForeignPtr fp $ \src ->
                 copyBytes (dst `plusPtr` i)
                           (src `plusPtr` o)
@@ -74,16 +80,16 @@ sendIT :: InternalTransport -> OSC -> IO ()
 sendIT t osc = do
     let buf = encodeOSC osc
         n = BL.length buf
-    replyFunc <- mkReplyFunc it_replyFunc
-    replyFuncData <- newStablePtr (replyFunc, t)
-    allocaArray (fromIntegral n) $ \cbuf -> do
+    -- putStrLn $ "sendIT: " ++ show n ++ " (" ++ show osc ++ ")"
+    _ <- allocaArray (fromIntegral n) $ \cbuf -> do
         copyByteString cbuf buf
         c'World_SendPacketWithContext
             (world t)
             (fromIntegral n)
             cbuf
-            replyFunc
-            (castStablePtrToPtr replyFuncData)
+            (replyFunc t)
+            (castStablePtrToPtr (replyFuncData t))
+    -- putStrLn $ "sendIT: " ++ show b
     return ()
 
 recvIT :: InternalTransport -> IO OSC
@@ -93,6 +99,9 @@ closeIT :: InternalTransport -> IO ()
 closeIT t = do
     sendIT t SC.quit
     c'World_WaitForQuit (world t)
+    freeHaskellFunPtr (replyFunc t)
+    freeStablePtr (replyFuncData t)
+    freeHaskellFunPtr (printFunc t)
 
 withWorldOptions :: (Ptr C'WorldOptions -> IO a) -> ServerOptions -> RTOptions -> IO a
 withWorldOptions f so ro = do
@@ -162,21 +171,3 @@ instance OSC.Transport InternalTransport where
     send  = sendIT
     recv  = recvIT
     close = closeIT
-
-instance OpenTransport InternalTransport where
-    openTransport so ro _ = withWorldOptions openIT so ro
-
--- main = do
---     opts <- c'kDefaultWorldOptions >>= peek
---     print opts
---     t <- newIT opts
---     send t (SC.notify True)
---     recv t >>= print
---     putStrLn "sending status ..."
---     send t (SC.status)
---     recv t >>= print
---     close t
-    -- world <- alloca $ \opts -> do
-    --             opts `poke` defaultWorldOptions
-    --             c'World_New opts
-    -- c'World_Cleanup world
