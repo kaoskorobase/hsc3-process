@@ -43,7 +43,9 @@ module Sound.SC3.Server.Options (
   , _outputSampleFormat
 ) where
 
-import Sound.SC3.Server.Process.Accessor (deriveAccessors)
+import           Control.Monad.Error
+import qualified Data.ConfigFile as CF
+import           Sound.SC3.Server.Process.Accessor (deriveAccessors)
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -69,6 +71,18 @@ instance Enum Verbosity where
     toEnum 2                  = VeryVerbose
     toEnum 3                  = ExtremelyVerbose
     toEnum _                  = error "Verbosity (toEnum): bad argument"
+
+instance CF.Get_C Verbosity where
+    get parser section option = do
+        s <- CF.get parser section option
+        case s of
+            "Silent"           -> return Silent
+            "Quiet"            -> return Quiet
+            "Normal"           -> return Normal
+            "Verbose"          -> return Verbose
+            "VeryVerbose"      -> return VeryVerbose
+            "ExtremelyVerbose" -> return ExtremelyVerbose
+            _ -> throwError $ (CF.ParseError $ "Invalid Verbosity value: " ++ s, "")
 
 -- ====================================================================
 -- * Server options

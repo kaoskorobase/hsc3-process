@@ -1,47 +1,48 @@
-name:               hsc3-process
-version:            0.3.1
-synopsis:           Create and control scsynth processes
-description:        Create and control scsynth processes.
-license:            GPL
-license-file:       LICENSE
-category:           Sound
-copyright:          Copyright (c) Stefan Kersten 2008-2009
-author:             Stefan Kersten
-maintainer:         Stefan Kersten
-stability:          provisional
-homepage:           http://code.haskell.org/~StefanKersten/code/hsc3-process
-tested-with:        GHC == 6.10.1
-build-type:         Simple
-cabal-version:      >= 1.6
+Name:               hsc3-process
+Version:            0.4.0
+Synopsis:           Create and control scsynth processes
+Description:        Create and control scsynth processes.
+License:            GPL
+License-File:       LICENSE
+Category:           Sound
+Copyright:          Copyright (c) Stefan Kersten 2008-2010
+Author:             Stefan Kersten
+Maintainer:         Stefan Kersten
+Stability:          experimental
+Homepage:           http://space.k-hornz.de/software/hsc3-process
+Tested-With:        GHC == 6.10.1, GHC == 6.12.3
+Build-Type:         Simple
+Cabal-Version:      >= 1.6
 
-extra-source-files: examples/config.hs
+Extra-Source-Files: examples/config.hs
                     examples/scsynth.cfg
                     examples/sine.hs
 
-library
-  exposed-modules:  Sound.SC3.Server.Internal
+Library
+  Exposed-Modules:  Sound.SC3.Server.Internal
                     Sound.SC3.Server.Options
                     Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.CommandLine
                     Sound.SC3.Server.Process.ConfigFile
-  other-modules:    Sound.SC3.Server.Process.Accessor
+  Other-Modules:    Sound.SC3.Server.Process.Accessor
 
-  build-depends:    base >= 3 && < 5
+  Build-Depends:    base >= 3 && < 5
                   , bindings-sc3
                   , bytestring >= 0.8 && < 0.10
                   , ConfigFile >= 1
                   , containers >= 0.2
                   , data-accessor >= 0.2
                   , data-accessor-template >= 0.2
+                  , data-accessor-mtl >= 0.2
                   , hosc >= 0.7 && < 0.9
                   , hsc3 >= 0.7 && < 0.9
                   , mtl >= 1.1
                   , process >= 1.0
+                  , regex-compat >= 0.9
                   , template-haskell >= 2
-                  , transformers
 
-  ghc-options:      -W
+  Ghc-Options:      -W
  
-source-repository head
-  type:             darcs
-  location:         http://code.haskell.org/~StefanKersten/code/hsc3-process/
+Source-Repository head
+  Type:             git
+  Location:         git://github.com/kaoskorobase/hsc3-process.git

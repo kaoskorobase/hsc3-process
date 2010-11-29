@@ -1,149 +1,169 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | Read server options from configuraton file.
 module Sound.SC3.Server.Process.ConfigFile (
-    fromAssocs,
-    toAssocs
+    getOptions
+  , setOptions
 ) where
-    
-import Control.Monad.Error              (MonadError)
-import Control.Monad.Trans.State        (StateT, evalStateT, execStateT)
-import Data.Accessor
-import Sound.OpenSoundControl           (TCP, UDP)
-import Sound.SC3.Server.Options
-import Data.ConfigFile                  (CPError, OptionSpec)
-import Data.Map                         (Map)
-import qualified Data.Map               as Map
 
-readMaybe :: (Read a) => String -> Maybe a
-readMaybe s = case reads s of
-             [(a, "")] -> return a
-             _         -> fail ("Could not read " ++ (show s))
+import           Control.Monad
+import           Control.Monad.Error
+import           Control.Monad.State (StateT)
+import qualified Control.Monad.State as State
+import           Data.Accessor
+import qualified Data.Accessor.Monad.MTL.State as A
+import qualified Data.List as L
+import           Sound.SC3.Server.Options
+import           Data.ConfigFile
+import           Text.Regex
 
--- TODO: Add parse error handling
-set :: (Read b, Monad m) => Map OptionSpec String -> OptionSpec -> Accessor a b -> StateT a m ()
-set opts name accessor = do
-    case Map.lookup name opts of
-        Nothing  -> return ()
-        Just str -> case readMaybe str of
-                        Nothing    -> return ()
-                        Just value -> putA accessor value
+newtype MaybeConfig a = MaybeConfig { maybeConfig :: Maybe a }
 
-get :: (Show b, Monad m) => OptionSpec -> Accessor a b -> StateT a m (OptionSpec, String)
-get name accessor = do
-    value <- getA accessor
-    return (name, show value)
+instance Show a => Show (MaybeConfig a) where
+    show = maybe "" show . maybeConfig
+
+instance Get_C a => Get_C (MaybeConfig a) where
+    get parser section option = liftM (MaybeConfig . Just) (get parser section option)
+
+data FilePathList = FilePathList { filePathList :: [FilePath] }
+
+instance Show FilePathList where
+    show = L.intercalate ":" . filePathList
+
+instance Get_C FilePathList where
+    get parser section option = liftM (FilePathList . splitRegex r) (get parser section option)
+        where r = mkRegex ":"
+
+getField :: (MonadError CPError m, Get_C b) => ConfigParser -> SectionSpec -> OptionSpec -> Accessor a b -> StateT a m ()
+getField parser section option accessor = do
+    case get parser section option of
+        Left _  -> return ()
+        Right x -> A.set accessor x
+
+getField_ :: (MonadError CPError m, Get_C c) => ConfigParser -> SectionSpec -> (c -> b) -> OptionSpec -> Accessor a b -> StateT a m ()
+getField_ parser section wrapper option accessor = do
+    case get parser section option of
+        Left _ -> return ()
+        Right x -> A.set accessor (wrapper x)
 
 -- | Get 'ServerOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultServerOptions'.
-getServerOptions :: (Monad m) => Map OptionSpec String -> m ServerOptions
-getServerOptions m = flip execStateT defaultServerOptions $ do
-    set m "serverProgram"              _serverProgram
-    set m "numberOfControlBusChannels" _numberOfControlBusChannels
-    set m "numberOfAudioBusChannels"   _numberOfAudioBusChannels
-    set m "numberOfInputBusChannels"   _numberOfInputBusChannels
-    set m "numberOfOutputBusChannels"  _numberOfOutputBusChannels
-    set m "blockSize"                  _blockSize
-    set m "numberOfSampleBuffers"      _numberOfSampleBuffers
-    set m "maxNumberOfNodes"           _maxNumberOfNodes
-    set m "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
-    set m "realtimeMemorySize"         _realtimeMemorySize
-    set m "numberOfWireBuffers"        _numberOfWireBuffers
-    set m "numberOfRandomSeeds"        _numberOfRandomSeeds
-    set m "loadSynthDefs"              _loadSynthDefs
-    set m "verbosity"                  _verbosity
-    set m "ugenPluginPath"             _ugenPluginPath
-    set m "restrictedPath"             _restrictedPath
+getServerOptions :: (MonadError CPError m) => ConfigParser -> SectionSpec -> m ServerOptions
+getServerOptions parser section = flip State.execStateT defaultServerOptions $ do
+    getField parser section                        "serverProgram"              _serverProgram
+    getField parser section                        "numberOfControlBusChannels" _numberOfControlBusChannels
+    getField parser section                        "numberOfAudioBusChannels"   _numberOfAudioBusChannels
+    getField parser section                        "numberOfInputBusChannels"   _numberOfInputBusChannels
+    getField parser section                        "numberOfOutputBusChannels"  _numberOfOutputBusChannels
+    getField parser section                        "blockSize"                  _blockSize
+    getField parser section                        "numberOfSampleBuffers"      _numberOfSampleBuffers
+    getField parser section                        "maxNumberOfNodes"           _maxNumberOfNodes
+    getField parser section                        "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
+    getField parser section                        "realtimeMemorySize"         _realtimeMemorySize
+    getField parser section                        "numberOfWireBuffers"        _numberOfWireBuffers
+    getField parser section                        "numberOfRandomSeeds"        _numberOfRandomSeeds
+    getField parser section                        "loadSynthDefs"              _loadSynthDefs
+    getField parser section                        "verbosity"                  _verbosity
+    getField_ parser section (Just . filePathList) "ugenPluginPath"             _ugenPluginPath
+    getField_ parser section maybeConfig           "restrictedPath"             _restrictedPath
 
 -- | Get 'RTOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultRTOptions'.
-getRTOptions :: (Monad m) => Map OptionSpec String -> m RTOptions
-getRTOptions m = flip execStateT defaultRTOptions $ do
-    set m "udpPortNumber"              _udpPortNumber
-    set m "tcpPortNumber"              _tcpPortNumber
-    set m "useZeroconf"                _useZeroconf
-    set m "maxNumberOfLogins"          _maxNumberOfLogins
-    set m "sessionPassword"            _sessionPassword
-    set m "hardwareDeviceName"         _hardwareDeviceName
-    set m "hardwareBufferSize"         _hardwareBufferSize
-    set m "hardwareSampleRate"         _hardwareSampleRate
-    set m "inputStreamsEnabled"        _inputStreamsEnabled
-    set m "outputStreamsEnabled"       _outputStreamsEnabled
+getRTOptions :: (MonadError CPError m) => ConfigParser -> SectionSpec -> m RTOptions
+getRTOptions parser section = flip State.execStateT defaultRTOptions $ do
+    getField parser section              "udpPortNumber"        _udpPortNumber
+    getField parser section              "tcpPortNumber"        _tcpPortNumber
+    getField parser section              "useZeroconf"          _useZeroconf
+    getField parser section              "maxNumberOfLogins"    _maxNumberOfLogins
+    getField_ parser section maybeConfig "sessionPassword"      _sessionPassword
+    getField_ parser section maybeConfig "hardwareDeviceName"   _hardwareDeviceName
+    getField parser section              "hardwareBufferSize"   _hardwareBufferSize
+    getField parser section              "hardwareSampleRate"   _hardwareSampleRate
+    getField_ parser section maybeConfig "inputStreamsEnabled"  _inputStreamsEnabled
+    getField_ parser section maybeConfig "outputStreamsEnabled" _outputStreamsEnabled
 
 -- | Get 'NRTOptions' from an option 'Map'.
 -- Uninitialized fields are taken from 'defaultNRTOptions'.
-getNRTOptions :: Monad m => Map OptionSpec String -> m NRTOptions
-getNRTOptions m = flip execStateT defaultNRTOptions $ do
-    set m "commandFilePath"            _commandFilePath
-    set m "inputFilePath"              _inputFilePath
-    set m "outputFilePath"             _outputFilePath
-    set m "outputSampleRate"           _outputSampleRate
-    set m "outputHeaderFormat"         _outputHeaderFormat
-    set m "outputSampleFormat"         _outputSampleFormat
+getNRTOptions :: MonadError CPError m => ConfigParser -> SectionSpec -> m NRTOptions
+getNRTOptions parser section = flip State.execStateT defaultNRTOptions $ do
+    getField_ parser section maybeConfig "commandFilePath"    _commandFilePath
+    getField_ parser section maybeConfig "inputFilePath"      _inputFilePath
+    getField parser section              "outputFilePath"     _outputFilePath
+    getField parser section              "outputSampleRate"   _outputSampleRate
+    getField parser section              "outputHeaderFormat" _outputHeaderFormat
+    getField parser section              "outputSampleFormat" _outputSampleFormat
 
--- | Read server options, realtime options and non-relatime options from an
--- association list.
---
--- TODO: Add error handling.
-fromAssocs :: MonadError CPError m => [(OptionSpec, String)] -> m (ServerOptions, RTOptions, NRTOptions)
-fromAssocs opts = do
-    srvo <- getServerOptions m
-    rto  <- getRTOptions m
-    nrto <- getNRTOptions m
-    return (srvo, rto, nrto)
-    where m = Map.fromList opts
+-- | Read server options, realtime options and non-relatime options from a 'ConfigParser'.
+getOptions :: MonadError CPError m => ConfigParser -> SectionSpec -> m (ServerOptions, RTOptions, NRTOptions)
+getOptions parser section = do
+    so <- getServerOptions parser section
+    ro <- getRTOptions parser section
+    no <- getNRTOptions parser section
+    return (so, ro, no)
 
--- | Convert 'ServerOptions' to association list.
-assocsServerOptions :: Monad m => ServerOptions -> m [(OptionSpec, String)]
-assocsServerOptions options = flip evalStateT options $ sequence [
-      get "serverProgram"              _serverProgram
-    , get "numberOfControlBusChannels" _numberOfControlBusChannels
-    , get "numberOfAudioBusChannels"   _numberOfAudioBusChannels
-    , get "numberOfInputBusChannels"   _numberOfInputBusChannels
-    , get "numberOfOutputBusChannels"  _numberOfOutputBusChannels
-    , get "blockSize"                  _blockSize
-    , get "numberOfSampleBuffers"      _numberOfSampleBuffers
-    , get "maxNumberOfNodes"           _maxNumberOfNodes
-    , get "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
-    , get "realtimeMemorySize"         _realtimeMemorySize
-    , get "numberOfWireBuffers"        _numberOfWireBuffers
-    , get "numberOfRandomSeeds"        _numberOfRandomSeeds
-    , get "loadSynthDefs"              _loadSynthDefs
-    , get "verbosity"                  _verbosity
-    , get "ugenPluginPath"             _ugenPluginPath
-    , get "restrictedPath"             _restrictedPath
-    ]
+setField :: (Show b, MonadError CPError m) => SectionSpec -> OptionSpec -> Accessor a b -> StateT (a, ConfigParser) m ()
+setField section option accessor = do
+    (options, parser) <- State.get
+    let value = getVal accessor options
+    parser' <- lift (setshow parser section option value)
+    State.put (options, parser')
 
--- | Convert 'RTOptions' to association list.
-assocsRTOptions :: Monad m => RTOptions -> m [(OptionSpec, String)]
-assocsRTOptions options = flip evalStateT options $ sequence [
-      get "udpPortNumber"              _udpPortNumber
-    , get "tcpPortNumber"              _tcpPortNumber
-    , get "useZeroconf"                _useZeroconf
-    , get "maxNumberOfLogins"          _maxNumberOfLogins
-    , get "sessionPassword"            _sessionPassword
-    , get "hardwareDeviceName"         _hardwareDeviceName
-    , get "hardwareBufferSize"         _hardwareBufferSize
-    , get "hardwareSampleRate"         _hardwareSampleRate
-    , get "inputStreamsEnabled"        _inputStreamsEnabled
-    , get "outputStreamsEnabled"       _outputStreamsEnabled
-    ]
+setField_ :: (Show c, MonadError CPError m) => (b -> c) -> SectionSpec -> OptionSpec -> Accessor a b -> StateT (a, ConfigParser) m ()
+setField_ wrapper section option accessor = do
+    (options, parser) <- State.get
+    let value = getVal accessor options
+    parser' <- lift (setshow parser section option (wrapper value))
+    State.put (options, parser')
 
--- | Convert 'NRTOptions' to association list.
-assocsNRTOptions :: Monad m => NRTOptions -> m [(OptionSpec, String)]
-assocsNRTOptions options = flip evalStateT options $ sequence [
-      get "commandFilePath"            _commandFilePath
-    , get "inputFilePath"              _inputFilePath
-    , get "outputFilePath"             _outputFilePath
-    , get "outputSampleRate"           _outputSampleRate
-    , get "outputHeaderFormat"         _outputHeaderFormat
-    , get "outputSampleFormat"         _outputSampleFormat
-    ]
+-- -- | Convert 'ServerOptions' to association list.
+setServerOptions :: MonadError CPError m => ServerOptions -> ConfigParser -> SectionSpec -> m ConfigParser
+setServerOptions options parser section = liftM snd $ flip State.execStateT (options, parser) $ do
+    setField                                    section "serverProgram"              _serverProgram
+    setField                                    section "numberOfControlBusChannels" _numberOfControlBusChannels
+    setField                                    section "numberOfAudioBusChannels"   _numberOfAudioBusChannels
+    setField                                    section "numberOfInputBusChannels"   _numberOfInputBusChannels
+    setField                                    section "numberOfOutputBusChannels"  _numberOfOutputBusChannels
+    setField                                    section "blockSize"                  _blockSize
+    setField                                    section "numberOfSampleBuffers"      _numberOfSampleBuffers
+    setField                                    section "maxNumberOfNodes"           _maxNumberOfNodes
+    setField                                    section "maxNumberOfSynthDefs"       _maxNumberOfSynthDefs
+    setField                                    section "realtimeMemorySize"         _realtimeMemorySize
+    setField                                    section "numberOfWireBuffers"        _numberOfWireBuffers
+    setField                                    section "numberOfRandomSeeds"        _numberOfRandomSeeds
+    setField                                    section "loadSynthDefs"              _loadSynthDefs
+    setField                                    section "verbosity"                  _verbosity
+    setField_ (MaybeConfig . fmap FilePathList) section "ugenPluginPath"             _ugenPluginPath
+    setField_ MaybeConfig                       section "restrictedPath"            _restrictedPath
+
+-- -- | Convert 'RTOptions' to association list.
+setRTOptions :: MonadError CPError m => RTOptions -> ConfigParser -> SectionSpec -> m ConfigParser
+setRTOptions options parser section = liftM snd $ flip State.execStateT (options, parser) $ do
+    setField              section "udpPortNumber"        _udpPortNumber
+    setField              section "tcpPortNumber"        _tcpPortNumber
+    setField              section "useZeroconf"          _useZeroconf
+    setField              section "maxNumberOfLogins"    _maxNumberOfLogins
+    setField_ MaybeConfig section "sessionPassword"      _sessionPassword
+    setField_ MaybeConfig section "hardwareDeviceName"   _hardwareDeviceName
+    setField              section "hardwareBufferSize"   _hardwareBufferSize
+    setField              section "hardwareSampleRate"   _hardwareSampleRate
+    setField_ MaybeConfig section "inputStreamsEnabled"  _inputStreamsEnabled
+    setField_ MaybeConfig section "outputStreamsEnabled" _outputStreamsEnabled
+
+-- -- | Convert 'NRTOptions' to association list.
+setNRTOptions :: MonadError CPError m => NRTOptions -> ConfigParser -> SectionSpec -> m ConfigParser
+setNRTOptions options parser section = liftM snd $ flip State.execStateT (options, parser) $ do
+    setField_ MaybeConfig section "commandFilePath"    _commandFilePath
+    setField_ MaybeConfig section "inputFilePath"      _inputFilePath
+    setField              section "outputFilePath"     _outputFilePath
+    setField              section "outputSampleRate"   _outputSampleRate
+    setField              section "outputHeaderFormat" _outputHeaderFormat
+    setField              section "outputSampleFormat" _outputSampleFormat
+
 
 -- | Convert server options and optionally realtime options and non-realtime
 -- options to an association list.
-toAssocs :: Monad m => ServerOptions -> Maybe RTOptions -> Maybe NRTOptions -> m [(OptionSpec, String)]
-toAssocs serverOptions rtOptions nrtOptions = do
-    srvo <- assocsServerOptions serverOptions
-    rto  <- maybe (return []) assocsRTOptions rtOptions
-    nrto <- maybe (return []) assocsNRTOptions nrtOptions
-    return $ srvo++rto++nrto
+setOptions :: MonadError CPError m => ConfigParser -> SectionSpec -> (ServerOptions, RTOptions, NRTOptions) -> m ConfigParser
+setOptions p0 section (so, ro, no) = do
+    p1 <- setServerOptions so p0 section
+    p2 <- setRTOptions     ro p1 section
+    p3 <- setNRTOptions    no p2 section
+    return p3
