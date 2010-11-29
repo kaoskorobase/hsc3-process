@@ -2,44 +2,43 @@
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
 module Sound.SC3.Server.Process (
-    module Sound.SC3.Server.Options,
-    OpenTransport(..),
-    OutputHandler(..),
-    defaultOutputHandler,
-    withTransport,
-    withSynth,
-    withNRT
+    module Sound.SC3.Server.Options
+  , OutputHandler(..)
+  , defaultOutputHandler
+  , withTransport
+  , withSynth
+  , openTCP
+  , openUDP
+  , withNRT
 ) where
 
-import Sound.OpenSoundControl               (Transport, TCP, UDP, openTCP, openUDP, send)
-import Control.Concurrent
-import Control.Exception
-import Control.Monad                        (unless)
-import Prelude hiding                       (catch)
-import Data.List                            (isPrefixOf)
+import           Control.Concurrent
+import           Control.Exception
+import           Control.Monad (unless)
+import           Prelude hiding (catch)
+import           Data.List (isPrefixOf)
+import           Sound.OpenSoundControl (Transport, TCP, UDP)
+import qualified Sound.OpenSoundControl as OSC
+import           Sound.SC3 (quit)
+import           Sound.SC3.Server.Options
+import           Sound.SC3.Server.Process.CommandLine
+import           System.Exit (ExitCode(..))
+import           System.IO (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
+import           System.Process (runInteractiveProcess, waitForProcess)
 
-import Sound.SC3                            (quit)
-import Sound.SC3.Server.Options
-import Sound.SC3.Server.Process.CommandLine
-import Sound.SC3.Server.Transport
-
-import System.Exit                          (ExitCode(..))
-import System.IO                            (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
-import System.Process                       (runInteractiveProcess, waitForProcess)
-
-hostName :: Maybe String -> String
-hostName = maybe "127.0.0.1" id
+localhost :: String
+localhost = "127.0.0.1"
 
 -- | Check wether a network port is within the valid range (0, 65535]
 checkPort :: String -> Int -> Int
 checkPort tag p | p <= 0 || p > 65535 = error ("Invalid " ++ tag ++ " port " ++ show p)
 checkPort _ p                         = p
 
-instance OpenTransport (UDP) where
-    openTransport _ options server = openUDP (hostName server) (checkPort "UDP" $ udpPortNumber options)
+openTCP :: ServerOptions -> RTOptions -> IO TCP
+openTCP _ rtOptions = OSC.openTCP localhost (checkPort "TCP" $ tcpPortNumber rtOptions)
 
-instance OpenTransport (TCP) where
-    openTransport _ options server = openTCP (hostName server) (checkPort "TCP" $ tcpPortNumber options)
+openUDP :: ServerOptions -> RTOptions -> IO UDP
+openUDP _ rtOptions = OSC.openUDP localhost (checkPort "UDP" $ udpPortNumber rtOptions)
 
 -- ====================================================================
 -- * Output handler
@@ -66,14 +65,15 @@ pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
 -- ====================================================================
 -- * Realtime scsynth execution
 
-withTransport :: (Transport t, OpenTransport t) =>
-    ServerOptions
+withTransport :: (Transport t) =>
+    (ServerOptions -> RTOptions -> IO t)
+ -> ServerOptions
  -> RTOptions
  -> (t -> IO a)
  -> IO a
-withTransport serverOptions rtOptions action = do
-    fd <- openTransport serverOptions rtOptions Nothing
-    action fd
+withTransport openTransport serverOptions rtOptions =
+    bracket (openTransport serverOptions rtOptions)
+            OSC.close
 
 -- | Execute a realtime instance of @scsynth@ with 'Transport' t.
 --
@@ -82,13 +82,14 @@ withTransport serverOptions rtOptions action = do
 --
 -- /NOTE/: When compiling executables with GHC, the @-threaded@ option should
 -- be passed, otherwise the I\/O handlers will not work correctly.
-withSynth :: (Transport t, OpenTransport t) =>
-    ServerOptions
+withSynth :: (Transport t) =>
+    (ServerOptions -> RTOptions -> IO t)
+ -> ServerOptions
  -> RTOptions
  -> OutputHandler
  -> (t -> IO a)
  -> IO a
-withSynth serverOptions rtOptions handler action = do
+withSynth openTransport serverOptions rtOptions handler action = do
         (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
         forkIO $ putStderr hErr
         result <- newEmptyMVar
@@ -110,16 +111,16 @@ withSynth serverOptions rtOptions handler action = do
             case l of
                 Left (ex :: IOException) -> returnExc (toException ex)
                 Right l ->
-                    if "SuperCollider 3 server ready." `isPrefixOf` l
+                    if "SuperCollider 3 server ready" `isPrefixOf` l
                         then do
                             e <- try (onPutString handler l)
                             case e of
                                 Left (ex :: IOException) -> returnExc (toException ex)
                                 _                        -> do
                                     forkIO $ putStdout h
-                                    fd <- openTransport serverOptions rtOptions Nothing
+                                    fd <- openTransport serverOptions rtOptions
                                     a <- try (action fd >>= evaluate)
-                                    send fd quit
+                                    OSC.send fd quit
                                     case a of
                                         Left (ex :: SomeException) -> returnExc (toException ex)
                                         Right a -> returnRes a
