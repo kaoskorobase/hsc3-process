@@ -5,6 +5,7 @@ module Sound.SC3.Server.Internal (
 
 import           Bindings.Sound.SC3
 import           Control.Concurrent.Chan
+import           Control.Concurrent.MVar
 import           Control.Exception (bracket)
 import           Control.Monad
 import           Control.Monad.State
@@ -18,17 +19,19 @@ import           Foreign.Marshal
 import           Foreign.Ptr
 import           Foreign.Storable
 import           Foreign.StablePtr
-import           Sound.OpenSoundControl as OSC
+import           Sound.OpenSoundControl (OSC)
+import qualified Sound.OpenSoundControl as OSC
+-- import qualified Sound.OpenSoundControl.Binary as BOSC
 import qualified Sound.SC3 as SC
 import           Sound.SC3.Server.Options
 import           Sound.SC3.Server.Process (OutputHandler(..))
 
 data InternalTransport = InternalTransport {
-    world         :: Ptr C'World
-  , recvChan      :: Chan OSC
-  , replyFunc     :: C'ReplyFunc
-  , replyFuncData :: StablePtr (Chan OSC)
-  , printFunc     :: C'HaskellPrintFunc
+    world         :: MVar (Ptr C'World)     -- ^The World pointer, wrapped in an MVar.
+  , recvChan      :: Chan OSC               -- ^The channel messages received from the library are written to.
+  , replyFunc     :: C'ReplyFunc            -- ^Reply callback function pointer.
+  , replyFuncData :: StablePtr (Chan OSC)   -- ^Data for the reply callback (a pointer to the receive channel).
+  , printFunc     :: C'HaskellPrintFunc     -- ^Print callback function pointer.
   }
 
 withInternal ::
@@ -39,13 +42,13 @@ withInternal ::
  -> IO a
 withInternal serverOptions rtOptions handler =
     bracket (withWorldOptions (newIT handler) serverOptions rtOptions)
-            close
+            OSC.close
 
 newIT :: OutputHandler -> Ptr C'WorldOptions -> IO InternalTransport
 newIT handler options = do
     pf <- mk'HaskellPrintFunc (\cs -> mapM_ (onPutString handler) . lines =<< peekCString cs)
     c'SetHaskellPrintFunc pf
-    w <- c'World_New options
+    w <- newMVar =<< c'World_New options
     c <- newChan
     f <- mk'ReplyFunc it_replyFunc
     p <- newStablePtr c
@@ -57,7 +60,7 @@ it_replyFunc replyAddress cbuf csize = do
     buf <- BS.packCStringLen (cbuf, fromIntegral csize)
     ptr <- liftM castPtrToStablePtr (c'ReplyAddress_ReplyData replyAddress)
     chan <- deRefStablePtr ptr
-    let osc = decodeOSC (BL.fromChunks [buf])
+    let osc = OSC.decodeOSC (BL.fromChunks [buf])
     -- putStrLn $ "it_replyFunc: " ++ show osc
     writeChan chan osc
 
@@ -77,20 +80,27 @@ copyByteString :: Ptr CChar -> BL.ByteString -> IO ()
 copyByteString dst = copyChunks dst . BL.toChunks
 
 sendIT :: InternalTransport -> OSC -> IO ()
-sendIT t osc = do
-    let buf = encodeOSC osc
+sendIT t osc = withMVar (world t) $ \w -> do
+    let buf = OSC.encodeOSC osc
+        -- buf1 = OSC.encodeOSC osc
         n = BL.length buf
     -- putStrLn $ "sendIT: " ++ show n ++ " (" ++ show osc ++ ")"
-    _ <- allocaArray (fromIntegral n) $ \cbuf -> do
-        copyByteString cbuf buf
-        c'World_SendPacketWithContext
-            (world t)
-            (fromIntegral n)
-            cbuf
-            (replyFunc t)
-            (castStablePtrToPtr (replyFuncData t))
-    -- putStrLn $ "sendIT: " ++ show b
-    return ()
+    -- when (buf /= buf1) $ do
+    --     putStrLn $ "================\n"
+    --             ++ show (BS.pack.BL.unpack$buf1)
+    --             ++ "\n--------------\n"
+    --             ++ show (BS.pack.BL.unpack$buf)
+    when (w /= nullPtr) $ do
+        -- TODO: Check return value and throw exception
+        _ <- allocaArray (fromIntegral n) $ \cbuf -> do
+            copyByteString cbuf buf
+            c'World_SendPacketWithContext
+                w
+                (fromIntegral n)
+                cbuf
+                (replyFunc t)
+                (castStablePtrToPtr (replyFuncData t))
+        return ()
 
 recvIT :: InternalTransport -> IO OSC
 recvIT = readChan . recvChan
@@ -98,10 +108,13 @@ recvIT = readChan . recvChan
 closeIT :: InternalTransport -> IO ()
 closeIT t = do
     sendIT t SC.quit
-    c'World_WaitForQuit (world t)
-    freeHaskellFunPtr (replyFunc t)
-    freeStablePtr (replyFuncData t)
-    freeHaskellFunPtr (printFunc t)
+    modifyMVar_ (world t) $ \w -> do
+        when (w /= nullPtr) $ do
+            c'World_WaitForQuit w
+            freeHaskellFunPtr (replyFunc t)
+            freeStablePtr (replyFuncData t)
+            freeHaskellFunPtr (printFunc t)
+        return nullPtr
 
 withWorldOptions :: (Ptr C'WorldOptions -> IO a) -> ServerOptions -> RTOptions -> IO a
 withWorldOptions f so ro = do
