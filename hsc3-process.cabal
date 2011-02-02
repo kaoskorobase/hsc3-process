@@ -33,10 +33,10 @@ Library
                   , containers >= 0.2
                   , data-accessor >= 0.2
                   , data-accessor-template >= 0.2
-                  , data-accessor-mtl >= 0.2
-                  , hosc >= 0.7 && < 0.9
-                  , hsc3 >= 0.7 && < 0.9
-                  , mtl >= 1.1
+                  , data-accessor-transformers >= 0.2
+                  , hosc >= 0.7 && < 0.10
+                  , hsc3 >= 0.7 && < 0.10
+                  , mtl >= 2
                   , process >= 1.0
                   , regex-compat >= 0.9
                   , template-haskell >= 2

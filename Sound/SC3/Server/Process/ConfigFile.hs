@@ -10,7 +10,7 @@ import           Control.Monad.Error
 import           Control.Monad.State (StateT)
 import qualified Control.Monad.State as State
 import           Data.Accessor
-import qualified Data.Accessor.Monad.MTL.State as A
+import qualified Data.Accessor.Monad.Trans.State as A
 import qualified Data.List as L
 import           Sound.SC3.Server.Options
 import           Data.ConfigFile
