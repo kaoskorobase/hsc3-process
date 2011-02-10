@@ -3,49 +3,49 @@ module Sound.SC3.Server.Options (
     Verbosity(..)
   , ServerOptions(..)
   , defaultServerOptions
-  , _serverProgram
-  , _numberOfControlBusChannels
-  , _numberOfAudioBusChannels
-  , _numberOfInputBusChannels
-  , _numberOfOutputBusChannels
-  , _blockSize
-  , _numberOfSampleBuffers
-  , _maxNumberOfNodes
-  , _maxNumberOfSynthDefs
-  , _realtimeMemorySize
-  , _numberOfWireBuffers
-  , _numberOfRandomSeeds
-  , _loadSynthDefs
-  , _verbosity
-  , _ugenPluginPath
-  , _restrictedPath
+  -- , _serverProgram
+  -- , _numberOfControlBusChannels
+  -- , _numberOfAudioBusChannels
+  -- , _numberOfInputBusChannels
+  -- , _numberOfOutputBusChannels
+  -- , _blockSize
+  -- , _numberOfSampleBuffers
+  -- , _maxNumberOfNodes
+  -- , _maxNumberOfSynthDefs
+  -- , _realtimeMemorySize
+  -- , _numberOfWireBuffers
+  -- , _numberOfRandomSeeds
+  -- , _loadSynthDefs
+  -- , _verbosity
+  -- , _ugenPluginPath
+  -- , _restrictedPath
   , RTOptions(..)
   , defaultRTOptions
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
-  , _udpPortNumber
-  , _tcpPortNumber
-  , _useZeroconf
-  , _maxNumberOfLogins
-  , _sessionPassword
-  , _hardwareDeviceName
-  , _hardwareBufferSize
-  , _hardwareSampleRate
-  , _inputStreamsEnabled
-  , _outputStreamsEnabled
+  -- , _udpPortNumber
+  -- , _tcpPortNumber
+  -- , _useZeroconf
+  -- , _maxNumberOfLogins
+  -- , _sessionPassword
+  -- , _hardwareDeviceName
+  -- , _hardwareBufferSize
+  -- , _hardwareSampleRate
+  -- , _inputStreamsEnabled
+  -- , _outputStreamsEnabled
   , NRTOptions(..)
   , defaultNRTOptions
-  , _commandFilePath
-  , _inputFilePath
-  , _outputFilePath
-  , _outputSampleRate
-  , _outputHeaderFormat
-  , _outputSampleFormat
+  -- , _commandFilePath
+  -- , _inputFilePath
+  -- , _outputFilePath
+  -- , _outputSampleRate
+  -- , _outputHeaderFormat
+  -- , _outputSampleFormat
 ) where
 
 import           Control.Monad.Error
 import qualified Data.ConfigFile as CF
-import           Sound.SC3.Server.Process.Accessor (deriveAccessors)
+-- import           Sound.SC3.Server.Process.Accessor (deriveAccessors)
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -129,7 +129,7 @@ defaultServerOptions = ServerOptions {
   , restrictedPath             = Nothing
 }
 
-$(deriveAccessors ''ServerOptions)
+-- $(deriveAccessors ''ServerOptions)
 
 -- ====================================================================
 -- * Realtime options
@@ -168,7 +168,7 @@ defaultRTOptions = RTOptions {
     outputStreamsEnabled    = Nothing
 }
 
-$(deriveAccessors ''RTOptions)
+-- $(deriveAccessors ''RTOptions)
 
 -- | Default realtime server options (UDP transport).
 defaultRTOptionsUDP :: RTOptions
@@ -202,4 +202,4 @@ defaultNRTOptions = NRTOptions {
     outputSampleFormat      = "int16"
 }
 
-$(deriveAccessors ''NRTOptions)
+-- $(deriveAccessors ''NRTOptions)

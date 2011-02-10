@@ -10,7 +10,7 @@ Author:             Stefan Kersten
 Maintainer:         Stefan Kersten
 Stability:          experimental
 Homepage:           http://space.k-hornz.de/software/hsc3-process
-Tested-With:        GHC == 6.10.1, GHC == 6.12.3
+Tested-With:        GHC == 6.10.1, GHC == 6.12.3, GHC == 7.0.1
 Build-Type:         Simple
 Cabal-Version:      >= 1.6
 
@@ -23,8 +23,8 @@ Library
                     Sound.SC3.Server.Options
                     Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.CommandLine
-                    Sound.SC3.Server.Process.ConfigFile
-  Other-Modules:    Sound.SC3.Server.Process.Accessor
+                    -- Sound.SC3.Server.Process.ConfigFile
+  -- Other-Modules:    Sound.SC3.Server.Process.Accessor
 
   Build-Depends:    base >= 3 && < 5
                   , bindings-sc3
@@ -32,7 +32,7 @@ Library
                   , ConfigFile >= 1
                   , containers >= 0.2
                   , data-accessor >= 0.2
-                  , data-accessor-template >= 0.2
+                  -- , data-accessor-template >= 0.2
                   , data-accessor-transformers >= 0.2
                   , hosc >= 0.7 && < 0.10
                   , hsc3 >= 0.7 && < 0.10
