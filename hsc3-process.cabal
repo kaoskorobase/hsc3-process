@@ -1,5 +1,5 @@
 Name:               hsc3-process
-Version:            0.4.0
+Version:            0.5.1
 Synopsis:           Create and control scsynth processes
 Description:        Create and control scsynth processes.
 License:            GPL
@@ -29,17 +29,17 @@ Library
   Build-Depends:    base >= 3 && < 5
                   , bindings-sc3
                   , bytestring >= 0.8 && < 0.10
-                  , ConfigFile >= 1
+                  -- , ConfigFile >= 1
                   , containers >= 0.2
                   , data-accessor >= 0.2
                   -- , data-accessor-template >= 0.2
-                  , data-accessor-transformers >= 0.2
+                  -- , data-accessor-transformers >= 0.2
                   , hosc >= 0.7 && < 0.10
                   , hsc3 >= 0.7 && < 0.10
-                  , mtl >= 2
+                  , mtl
                   , process >= 1.0
                   , regex-compat >= 0.9
-                  , template-haskell >= 2
+                  -- , template-haskell >= 2
 
   Ghc-Options:      -W
  
