@@ -43,7 +43,7 @@ module Sound.SC3.Server.Options (
   -- , _outputSampleFormat
 ) where
 
-import           Control.Monad.Error
+-- import           Control.Monad.Error
 -- import qualified Data.ConfigFile as CF
 -- import           Sound.SC3.Server.Process.Accessor (deriveAccessors)
 
