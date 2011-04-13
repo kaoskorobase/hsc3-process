@@ -5,16 +5,12 @@ module Sound.SC3.Server.Process.CommandLine (
   , mkOption
 ) where
 
-import Data.Accessor
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import Sound.SC3.Server.Options
 
 -- ====================================================================
 -- scsynth commandline options
-
-class CommandLine a where
-    argumentList :: a -> [String]
 
 -- | Convert a value to an option string.
 class Show a => Option a where
@@ -43,15 +39,6 @@ data ToOption a = forall b . Option b => ToOption (a -> b)
 
 toOption :: a -> ToOption a -> String
 toOption a (ToOption f) = showOption (f a)
-
-mkOption_ :: (Eq b, Option b, Show b) => a -> a -> String -> Accessor a b -> [String]
-mkOption_ defaultOptions options optName accessor =
-        if value == defaultValue
-        then []
-        else [optName, showOption value]
-    where
-        defaultValue = defaultOptions ^. accessor
-        value        = options ^. accessor
 
 mkOption :: a -> a -> String -> ToOption a -> Maybe (String, String)
 mkOption defaultOptions options optName accessor =
