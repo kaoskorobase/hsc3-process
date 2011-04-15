@@ -35,6 +35,7 @@ Library
                   -- , data-accessor-template >= 0.2
                   -- , data-accessor-transformers >= 0.2
                   , hosc >= 0.7
+                  , hosc-bytestring >= 0.10
                   , hsc3 >= 0.7
                   , mtl
                   , process >= 1.0

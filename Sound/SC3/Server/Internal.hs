@@ -21,7 +21,7 @@ import           Foreign.Storable
 import           Foreign.StablePtr
 import           Sound.OpenSoundControl (OSC)
 import qualified Sound.OpenSoundControl as OSC
--- import qualified Sound.OpenSoundControl.Binary as BOSC
+import qualified Sound.OpenSoundControl.ByteString as BOSC
 import qualified Sound.SC3 as SC
 import           Sound.SC3.Server.Options
 import           Sound.SC3.Server.Process (OutputHandler(..))
@@ -81,15 +81,8 @@ copyByteString dst = copyChunks dst . BL.toChunks
 
 sendIT :: InternalTransport -> OSC -> IO ()
 sendIT t osc = withMVar (world t) $ \w -> do
-    let buf = OSC.encodeOSC osc
-        -- buf1 = OSC.encodeOSC osc
+    let buf = BOSC.encodeOSC osc
         n = BL.length buf
-    -- putStrLn $ "sendIT: " ++ show n ++ " (" ++ show osc ++ ")"
-    -- when (buf /= buf1) $ do
-    --     putStrLn $ "================\n"
-    --             ++ show (BS.pack.BL.unpack$buf1)
-    --             ++ "\n--------------\n"
-    --             ++ show (BS.pack.BL.unpack$buf)
     when (w /= nullPtr) $ do
         -- TODO: Check return value and throw exception
         _ <- allocaArray (fromIntegral n) $ \cbuf -> do
