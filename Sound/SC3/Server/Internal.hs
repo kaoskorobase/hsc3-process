@@ -8,7 +8,8 @@ import           Control.Concurrent.Chan
 import           Control.Concurrent.MVar
 import           Control.Exception (bracket)
 import           Control.Monad
-import           Control.Monad.State
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Trans.State (execStateT, get, put)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BS
 import qualified Data.ByteString.Lazy as BL
