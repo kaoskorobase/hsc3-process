@@ -1,51 +1,21 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Sound.SC3.Server.Options (
-    Verbosity(..)
+module Sound.SC3.Server.Options
+  ( Verbosity(..)
   , ServerOptions(..)
   , defaultServerOptions
-  -- , _serverProgram
-  -- , _numberOfControlBusChannels
-  -- , _numberOfAudioBusChannels
-  -- , _numberOfInputBusChannels
-  -- , _numberOfOutputBusChannels
-  -- , _blockSize
-  -- , _numberOfSampleBuffers
-  -- , _maxNumberOfNodes
-  -- , _maxNumberOfSynthDefs
-  -- , _realtimeMemorySize
-  -- , _numberOfWireBuffers
-  -- , _numberOfRandomSeeds
-  -- , _loadSynthDefs
-  -- , _verbosity
-  -- , _ugenPluginPath
-  -- , _restrictedPath
+  , NetworkPort(..)
+  , defaultUDPPort
+  , defaultTCPPort
   , RTOptions(..)
   , defaultRTOptions
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
-  -- , _udpPortNumber
-  -- , _tcpPortNumber
-  -- , _useZeroconf
-  -- , _maxNumberOfLogins
-  -- , _sessionPassword
-  -- , _hardwareDeviceName
-  -- , _hardwareBufferSize
-  -- , _hardwareSampleRate
-  -- , _inputStreamsEnabled
-  -- , _outputStreamsEnabled
   , NRTOptions(..)
   , defaultNRTOptions
-  -- , _commandFilePath
-  -- , _inputFilePath
-  -- , _outputFilePath
-  -- , _outputSampleRate
-  -- , _outputHeaderFormat
-  -- , _outputSampleFormat
-) where
+  ) where
 
 -- import           Control.Monad.Error
 -- import qualified Data.ConfigFile as CF
--- import           Sound.SC3.Server.Process.Accessor (deriveAccessors)
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -106,7 +76,7 @@ data ServerOptions = ServerOptions {
   , verbosity                   :: Verbosity         -- ^ 'Verbosity' level
   , ugenPluginPath				:: Maybe [FilePath]  -- ^ List of UGen plugin search paths
   , restrictedPath              :: Maybe FilePath    -- ^ Sandbox path to restrict OSC command filesystem access
-} deriving (Eq, Show)
+  } deriving (Eq, Show)
 
 -- | Default server options.
 defaultServerOptions :: ServerOptions
@@ -127,19 +97,33 @@ defaultServerOptions = ServerOptions {
   , verbosity                  = Normal
   , ugenPluginPath             = Nothing
   , restrictedPath             = Nothing
-}
-
--- $(deriveAccessors ''ServerOptions)
+  }
 
 -- ====================================================================
 -- * Realtime options
+
+data NetworkPort =
+    UDPPort Int
+  | TCPPort Int
+  deriving (Eq, Show)
+
+-- | Default network port number.
+defaultPortNumber :: Int
+defaultPortNumber = 57110
+
+-- | Default UDP port.
+defaultUDPPort :: NetworkPort
+defaultUDPPort = UDPPort defaultPortNumber
+
+-- | Default TCP port.
+defaultTCPPort :: NetworkPort
+defaultTCPPort = TCPPort defaultPortNumber
 
 -- | Realtime server options, parameterized by the OpenSoundControl
 -- 'Transport' to be used.
 data RTOptions = RTOptions {
     -- Network control
-    udpPortNumber           :: Int             -- ^ UDP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
-  , tcpPortNumber           :: Int             -- ^ TCP port number (one of 'udpPortNumber' and 'tcpPortNumber' must be non-zero)
+    networkPort             :: NetworkPort     -- ^ Network port
   , useZeroconf             :: Bool            -- ^ If 'True', publish scsynth service through Zeroconf
   , maxNumberOfLogins       :: Int             -- ^ Max number of supported logins if 'sessionPassword' is set
   , sessionPassword         :: Maybe String    -- ^ Session password
@@ -149,57 +133,52 @@ data RTOptions = RTOptions {
   , hardwareSampleRate      :: Int             -- ^ Hardware buffer size (no effect with JACK)
   , inputStreamsEnabled     :: Maybe Int       -- ^ Enabled input streams (CoreAudio only)
   , outputStreamsEnabled    :: Maybe Int       -- ^ Enabled output streams (CoreAudio only)
-} deriving (Eq, Show)
+  } deriving (Eq, Show)
 
 -- | Default realtime server options.
 defaultRTOptions :: RTOptions
 defaultRTOptions = RTOptions {
     -- Network control
-    udpPortNumber           = 0,
-    tcpPortNumber           = 0,
-    useZeroconf             = False,
-    maxNumberOfLogins       = 16,
-    sessionPassword         = Nothing,
+    networkPort             = defaultUDPPort
+  , useZeroconf             = False
+  , maxNumberOfLogins       = 16
+  , sessionPassword         = Nothing
     -- Audio device control
-    hardwareDeviceName      = Nothing,
-    hardwareBufferSize      = 0,
-    hardwareSampleRate      = 0,
-    inputStreamsEnabled     = Nothing,
-    outputStreamsEnabled    = Nothing
-}
-
--- $(deriveAccessors ''RTOptions)
+  , hardwareDeviceName      = Nothing
+  , hardwareBufferSize      = 0
+  , hardwareSampleRate      = 0
+  , inputStreamsEnabled     = Nothing
+  , outputStreamsEnabled    = Nothing
+  }
 
 -- | Default realtime server options (UDP transport).
 defaultRTOptionsUDP :: RTOptions
-defaultRTOptionsUDP =  defaultRTOptions { udpPortNumber = 57110 }
+defaultRTOptionsUDP =  defaultRTOptions { networkPort = defaultUDPPort }
 
 -- | Default realtime server options (TCP transport).
 defaultRTOptionsTCP :: RTOptions
-defaultRTOptionsTCP = defaultRTOptions { tcpPortNumber = 57110 }
+defaultRTOptionsTCP = defaultRTOptions { networkPort = defaultTCPPort }
 
 -- ====================================================================
 -- * Non-Realtime options
 
 -- | Non-realtime server options.
 data NRTOptions = NRTOptions {
-    commandFilePath    :: Maybe FilePath,  -- ^ Path to OSC command file ('Nothing' for stdin)
-    inputFilePath      :: Maybe FilePath,  -- ^ Path to input sound file ('Nothing' for no audio input)
-    outputFilePath     :: FilePath,        -- ^ Path to output sound file
-    outputSampleRate   :: Int,             -- ^ Output sound file sample rate
-    outputHeaderFormat :: String,          -- ^ Output sound file header format
-    outputSampleFormat :: String           -- ^ Output sound file sample format
+    commandFilePath    :: Maybe FilePath    -- ^ Path to OSC command file ('Nothing' for stdin)
+  , inputFilePath      :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
+  , outputFilePath     :: FilePath          -- ^ Path to output sound file
+  , outputSampleRate   :: Int               -- ^ Output sound file sample rate
+  , outputHeaderFormat :: String            -- ^ Output sound file header format
+  , outputSampleFormat :: String            -- ^ Output sound file sample format
 } deriving (Eq, Show)
 
 -- | Default non-realtime server options.
 defaultNRTOptions :: NRTOptions
 defaultNRTOptions = NRTOptions {
-    commandFilePath         = Nothing,
-    inputFilePath           = Nothing,
-    outputFilePath          = "output.wav",
-    outputSampleRate        = 44100,
-    outputHeaderFormat      = "wav",
-    outputSampleFormat      = "int16"
-}
-
--- $(deriveAccessors ''NRTOptions)
+    commandFilePath    = Nothing
+  , inputFilePath      = Nothing
+  , outputFilePath     = "output.wav"
+  , outputSampleRate   = 44100
+  , outputHeaderFormat = "wav"
+  , outputSampleFormat = "int16"
+  }

@@ -1,29 +1,29 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ExistentialQuantification
+           , ScopedTypeVariables #-}
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
-module Sound.SC3.Server.Process (
-    module Sound.SC3.Server.Options
+module Sound.SC3.Server.Process
+  ( module Sound.SC3.Server.Options
   , OutputHandler(..)
   , defaultOutputHandler
+  , NetworkTransport
   , withTransport
   , withSynth
-  , openTCP
-  , openUDP
-  , withNRT
-) where
+  , withNRT ) where
 
+import           Control.Applicative
 import           Control.Concurrent
 import           Control.Exception
 import           Control.Monad (unless)
 import           Prelude hiding (catch)
 import           Data.List (isPrefixOf)
-import           Sound.OpenSoundControl (Transport, TCP, UDP)
+import           Sound.OpenSoundControl (Transport(..))
 import qualified Sound.OpenSoundControl as OSC
 import           Sound.SC3 (quit)
 import           Sound.SC3.Server.Options
 import           Sound.SC3.Server.Process.CommandLine
 import           System.Exit (ExitCode(..))
-import           System.IO (Handle, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
+import           System.IO (Handle, hFlush, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
 import           System.Process (runInteractiveProcess, waitForProcess)
 
 localhost :: String
@@ -34,11 +34,18 @@ checkPort :: String -> Int -> Int
 checkPort tag p | p <= 0 || p > 65535 = error ("Invalid " ++ tag ++ " port " ++ show p)
 checkPort _ p                         = p
 
-openTCP :: ServerOptions -> RTOptions -> IO TCP
-openTCP _ rtOptions = OSC.openTCP localhost (checkPort "TCP" $ tcpPortNumber rtOptions)
+-- | Network transport wrapper.
+data NetworkTransport = forall t . Transport t => NetworkTransport t
 
-openUDP :: ServerOptions -> RTOptions -> IO UDP
-openUDP _ rtOptions = OSC.openUDP localhost (checkPort "UDP" $ udpPortNumber rtOptions)
+instance Transport NetworkTransport where
+    recv (NetworkTransport t) = recv t
+    send (NetworkTransport t) = send t
+    close (NetworkTransport t) = close t
+
+-- | Open a network transport connected to a network port.
+openTransport :: NetworkPort -> IO NetworkTransport
+openTransport (UDPPort p) = NetworkTransport <$> OSC.openUDP localhost (checkPort "UDP" p)
+openTransport (TCPPort p) = NetworkTransport <$> OSC.openTCP localhost (checkPort "TCP" p)
 
 -- ====================================================================
 -- * Output handler
@@ -47,14 +54,14 @@ openUDP _ rtOptions = OSC.openUDP localhost (checkPort "UDP" $ udpPortNumber rtO
 data OutputHandler = OutputHandler {
     onPutString :: String -> IO ()     -- ^ Handle one line of normal output
   , onPutError  :: String -> IO ()     -- ^ Handle one line of error output
-}
+  }
 
 -- | Default IO handler, writing to stdout and stderr, respectively.
 defaultOutputHandler :: OutputHandler
 defaultOutputHandler = OutputHandler {
-    onPutString = hPutStrLn stdout
-  , onPutError  = hPutStrLn stderr
-}
+    onPutString = \s -> hPutStrLn stdout s >> hFlush stdout
+  , onPutError  = \s -> hPutStrLn stderr s >> hFlush stderr
+  }
 
 -- ====================================================================
 -- Process helpers
@@ -65,15 +72,12 @@ pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
 -- ====================================================================
 -- * Realtime scsynth execution
 
-withTransport :: (Transport t) =>
-    (ServerOptions -> RTOptions -> IO t)
- -> ServerOptions
+withTransport ::
+    ServerOptions
  -> RTOptions
- -> (t -> IO a)
+ -> (NetworkTransport -> IO a)
  -> IO a
-withTransport openTransport serverOptions rtOptions =
-    bracket (openTransport serverOptions rtOptions)
-            OSC.close
+withTransport _ rtOptions = bracket (openTransport (networkPort rtOptions)) OSC.close
 
 -- | Execute a realtime instance of @scsynth@ with 'Transport' t.
 --
@@ -82,28 +86,27 @@ withTransport openTransport serverOptions rtOptions =
 --
 -- /NOTE/: When compiling executables with GHC, the @-threaded@ option should
 -- be passed, otherwise the I\/O handlers will not work correctly.
-withSynth :: (Transport t) =>
-    (ServerOptions -> RTOptions -> IO t)
- -> ServerOptions
+withSynth ::
+    ServerOptions
  -> RTOptions
  -> OutputHandler
- -> (t -> IO a)
+ -> (NetworkTransport -> IO a)
  -> IO a
-withSynth openTransport serverOptions rtOptions handler action = do
-        (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-        forkIO $ putStderr hErr
-        result <- newEmptyMVar
-        thread <- forkIO (loop hOut result)
-        exitCode <- waitForProcess hProc
-        case exitCode of
-            ExitSuccess -> do
-                a <- readMVar result
-                case a of
-                    Left e  -> throw e
-                    Right a -> return a
-            ExitFailure _ -> do
-                killThread thread
-                throw (toException exitCode)
+withSynth serverOptions rtOptions handler action = do
+    (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
+    forkIO $ putStderr hErr
+    result <- newEmptyMVar
+    thread <- forkIO (loop hOut result)
+    exitCode <- waitForProcess hProc
+    case exitCode of
+        ExitSuccess -> do
+            a <- readMVar result
+            case a of
+                Left e  -> throw e
+                Right a -> return a
+        ExitFailure _ -> do
+            killThread thread
+            throw (toException exitCode)
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
         loop h result = do
@@ -118,7 +121,7 @@ withSynth openTransport serverOptions rtOptions handler action = do
                                 Left (ex :: IOException) -> returnExc (toException ex)
                                 _                        -> do
                                     forkIO $ putStdout h
-                                    fd <- openTransport serverOptions rtOptions
+                                    fd <- openTransport (networkPort rtOptions)
                                     a <- try (action fd >>= evaluate)
                                     OSC.send fd quit
                                     case a of
@@ -147,25 +150,25 @@ withNRT ::
  -> (Handle -> IO a)
  -> IO a
 withNRT serverOptions nrtOptions handler action = do
-        (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-        forkIO $ putStdout hOut
-        forkIO $ putStderr hErr
-        result <- newEmptyMVar
-        thread <- forkIO $ do
-            a <- try (action hIn)
+    (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
+    forkIO $ putStdout hOut
+    forkIO $ putStderr hErr
+    result <- newEmptyMVar
+    thread <- forkIO $ do
+        a <- try (action hIn)
+        case a of
+            Left (ex :: SomeException) -> putMVar result (Left ex)
+            _                          -> putMVar result a
+    exitCode <- waitForProcess hProc
+    case exitCode of
+        ExitSuccess -> do
+            a <- readMVar result
             case a of
-                Left (ex :: SomeException) -> putMVar result (Left ex)
-                _                          -> putMVar result a
-        exitCode <- waitForProcess hProc
-        case exitCode of
-            ExitSuccess -> do
-                a <- readMVar result
-                case a of
-                    Left e  -> throw e
-                    Right a -> return a
-            ExitFailure _ -> do
-                killThread thread
-                throw (toException exitCode)
+                Left e  -> throw e
+                Right a -> return a
+        ExitFailure _ -> do
+            killThread thread
+            throw (toException exitCode)
     where
         (exe:args) = nrtCommandLine serverOptions nrtOptions { commandFilePath = Nothing }
         putStdout = pipeOutput (onPutString handler)

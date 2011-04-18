@@ -2,7 +2,6 @@
 module Sound.SC3.Server.Process.CommandLine (
     rtCommandLine
   , nrtCommandLine
-  , mkOption
 ) where
 
 import Data.List (intercalate)
@@ -75,17 +74,20 @@ mkServerOptions options = (flattenOptions.mkOptions defaultServerOptions options
   , ("-P" , ToOption restrictedPath            ) ]
 
 mkRTOptions :: RTOptions -> [String]
-mkRTOptions options = (flattenOptions.mkOptions defaultRTOptions options) [
-    ("-u" , ToOption udpPortNumber        )
-  , ("-t" , ToOption tcpPortNumber        )
-  , ("-R" , ToOption useZeroconf          )
-  , ("-H" , ToOption hardwareDeviceName   )
-  , ("-Z" , ToOption hardwareBufferSize   )
-  , ("-S" , ToOption hardwareSampleRate   )
-  , ("-l" , ToOption maxNumberOfLogins    )
-  , ("-p" , ToOption sessionPassword      )
-  , ("-I" , ToOption inputStreamsEnabled  )
-  , ("-O" , ToOption outputStreamsEnabled ) ]
+mkRTOptions options =
+    (case networkPort options of
+        UDPPort p -> ["-u", showOption p]
+        TCPPort p -> ["-t", showOption p])
+    ++
+    (flattenOptions $ mkOptions defaultRTOptions options $
+        [ ("-R" , ToOption useZeroconf          )
+        , ("-H" , ToOption hardwareDeviceName   )
+        , ("-Z" , ToOption hardwareBufferSize   )
+        , ("-S" , ToOption hardwareSampleRate   )
+        , ("-l" , ToOption maxNumberOfLogins    )
+        , ("-p" , ToOption sessionPassword      )
+        , ("-I" , ToOption inputStreamsEnabled  )
+        , ("-O" , ToOption outputStreamsEnabled ) ])
 
 mkNRTOptions :: NRTOptions -> [String]
 mkNRTOptions options =
