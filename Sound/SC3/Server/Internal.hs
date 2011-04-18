@@ -21,7 +21,6 @@ import           Foreign.Storable
 import           Foreign.StablePtr
 import           Sound.OpenSoundControl (OSC)
 import qualified Sound.OpenSoundControl as OSC
-import qualified Sound.OpenSoundControl.ByteString as BOSC
 import qualified Sound.SC3 as SC
 import           Sound.SC3.Server.Options
 import           Sound.SC3.Server.Process (OutputHandler(..))
@@ -81,7 +80,7 @@ copyByteString dst = copyChunks dst . BL.toChunks
 
 sendIT :: InternalTransport -> OSC -> IO ()
 sendIT t osc = withMVar (world t) $ \w -> do
-    let buf = BOSC.encodeOSC osc
+    let buf = OSC.encodeOSC osc
         n = BL.length buf
     when (w /= nullPtr) $ do
         -- TODO: Check return value and throw exception
