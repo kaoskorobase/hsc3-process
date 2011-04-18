@@ -17,6 +17,7 @@ scmain fd = do
 
 main :: IO ()   
 main = withSynth
+        openUDP
         (defaultServerOptions
             { serverProgram = "scsynth"
             , loadSynthDefs = False })
