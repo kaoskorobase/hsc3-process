@@ -27,8 +27,8 @@ Library
   -- Other-Modules:    Sound.SC3.Server.Process.Accessor
 
   Build-Depends:    base >= 3 && < 5
-                  , bindings-sc3
-                  , bytestring >= 0.8 && < 0.10
+                  , bindings-sc3 >= 0.0.0
+                  , bytestring >= 0.8
                   -- , ConfigFile >= 1
                   , containers >= 0.2
                   , data-accessor >= 0.2
