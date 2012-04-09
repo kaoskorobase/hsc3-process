@@ -36,9 +36,10 @@ Library
                   -- , data-accessor-transformers >= 0.2
                   , hosc >= 0.7
                   , hsc3 >= 0.7
+                  , mtl >= 2.0 && < 2.1
                   , process >= 1.0
                   , regex-compat >= 0.9
-                  , transformers
+                  , transformers >= 0.2.0 && < 0.3.0
 
   Ghc-Options:      -W
  
