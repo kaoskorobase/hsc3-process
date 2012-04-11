@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Sound.SC3.Server.Options
   ( Verbosity(..)
   , ServerOptions(..)
@@ -74,7 +73,7 @@ data ServerOptions = ServerOptions {
   , numberOfRandomSeeds         :: Int               -- ^ Number of random number generator seeds
   , loadSynthDefs               :: Bool              -- ^ If 'True', load synth definitions from /synthdefs/ directory on startup
   , verbosity                   :: Verbosity         -- ^ 'Verbosity' level
-  , ugenPluginPath				:: Maybe [FilePath]  -- ^ List of UGen plugin search paths
+  , ugenPluginPath              :: Maybe [FilePath]  -- ^ List of UGen plugin search paths
   , restrictedPath              :: Maybe FilePath    -- ^ Sandbox path to restrict OSC command filesystem access
   } deriving (Eq, Show)
 
