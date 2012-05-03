@@ -42,7 +42,7 @@ withInternal ::
  -> IO a
 withInternal serverOptions rtOptions handler =
     bracket (withWorldOptions (newIT handler) serverOptions rtOptions)
-            OSC.close
+            closeIT
 
 newIT :: OutputHandler -> Ptr C'WorldOptions -> IO InternalTransport
 newIT handler options = do
