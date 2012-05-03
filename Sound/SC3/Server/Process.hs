@@ -94,49 +94,41 @@ withSynth ::
  -> IO a
 withSynth serverOptions rtOptions handler action = do
     (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-    forkIO $ putStderr hErr
+    forkPipe onPutError hErr
     result <- newEmptyMVar
-    thread <- forkIO (loop hOut result)
+    thread <- forkIO $ loop hOut result
     exitCode <- waitForProcess hProc
     case exitCode of
         ExitSuccess -> do
-            a <- readMVar result
-            case a of
-                Left e  -> throw e
-                Right a -> return a
+            b <- isEmptyMVar result
+            if b
+                then throw NonTermination
+                else do
+                    a <- readMVar result
+                    case a of
+                        Left (e::SomeException) -> throw e
+                        Right a -> return a
         ExitFailure _ -> do
             killThread thread
             throw (toException exitCode)
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
         loop h result = do
-            l <- try (hGetLine h)
-            case l of
-                Left (ex :: IOException) -> returnExc (toException ex)
-                Right l ->
-                    if "SuperCollider 3 server ready" `isPrefixOf` l
-                        then do
-                            e <- try (onPutString handler l)
-                            case e of
-                                Left (ex :: IOException) -> returnExc (toException ex)
-                                _                        -> do
-                                    forkIO $ putStdout h
-                                    fd <- openTransport (networkPort rtOptions)
-                                    a <- try (action fd >>= evaluate)
-                                    OSC.send fd quit
-                                    case a of
-                                        Left (ex :: SomeException) -> returnExc (toException ex)
-                                        Right a -> returnRes a
-                        else do
-                            e <- try (onPutString handler l)
-                            case e of
-                                Left (ex :: IOException) -> returnExc (toException ex)
-                                _                        -> loop h result -- recurse
-            where
-                returnRes a = putMVar result (Right a)
-                returnExc e = putMVar result (Left e)
-        putStdout = pipeOutput (onPutString handler)
-        putStderr = pipeOutput (onPutError  handler)
+            e <- try $ do
+                l <- hGetLine h
+                onPutString handler l
+                if "SuperCollider 3 server ready" `isPrefixOf` l
+                    then cont h result
+                    else loop h result
+            case e of
+                Left exc -> putMVar result (Left exc)
+                Right () -> return ()
+        cont h result = do
+            forkPipe onPutString h
+            fd <- openTransport (networkPort rtOptions)
+            action fd >>= evaluate >>= putMVar result . Right
+            OSC.send fd quit
+        forkPipe f = forkIO . pipeOutput (f handler)
 
 -- ====================================================================
 -- * Non-Realtime scsynth execution
