@@ -9,7 +9,7 @@ import           Control.Concurrent.MVar
 import           Control.Exception (bracket)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Trans.State (execStateT, get, put)
+import qualified Control.Monad.Trans.State as State
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BS
 import qualified Data.ByteString.Lazy as BL
@@ -111,7 +111,7 @@ closeIT t = do
 
 withWorldOptions :: (Ptr C'WorldOptions -> IO a) -> ServerOptions -> RTOptions -> IO a
 withWorldOptions f so ro = do
-    (fs, cs) <- flip execStateT ([], []) $ do
+    (fs, cs) <- flip State.execStateT ([], []) $ do
         -- c'WorldOptions'mPassword :: CString
         setOpt (\x -> x { c'WorldOptions'mNumBuffers = int (numberOfSampleBuffers so) })
         setOpt (\x -> x { c'WorldOptions'mMaxLogins  = int (maxNumberOfLogins ro) })
@@ -166,12 +166,12 @@ withWorldOptions f so ro = do
         path :: [String] -> String
         path = L.intercalate ":"
         setOpt f = do
-            (fs, cs) <- get
-            put (f:fs, cs)
+            (fs, cs) <- State.get
+            State.put (f:fs, cs)
         setOptS f s = do
             ptr <- liftIO (newCString s)
-            (fs, cs) <- get
-            put (flip f ptr:fs, ptr:cs)
+            (fs, cs) <- State.get
+            State.put (flip f ptr:fs, ptr:cs)
             
 instance OSC.Transport InternalTransport where
     send  = sendIT
