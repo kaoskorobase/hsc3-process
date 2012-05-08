@@ -95,39 +95,26 @@ withSynth ::
 withSynth serverOptions rtOptions handler action = do
     (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
     forkPipe onPutError hErr
-    result <- newEmptyMVar
-    thread <- forkIO $ loop hOut result
-    exitCode <- waitForProcess hProc
-    case exitCode of
-        ExitSuccess -> do
-            b <- isEmptyMVar result
-            if b
-                then throw NonTermination
-                else do
-                    a <- readMVar result
-                    case a of
-                        Left (e::SomeException) -> throw e
-                        Right a -> return a
-        ExitFailure _ -> do
-            killThread thread
-            throw (toException exitCode)
+    exitCode <- newEmptyMVar
+    forkIO $ waitForProcess hProc >>= putMVar exitCode
+    a <- loop hOut
+    e <- takeMVar exitCode
+    case e of
+        ExitSuccess -> return ()
+        ExitFailure _ -> throw e
+    return a
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
-        loop h result = do
-            e <- try $ do
-                l <- hGetLine h
-                onPutString handler l
-                if "SuperCollider 3 server ready" `isPrefixOf` l
-                    then cont h result
-                    else loop h result
-            case e of
-                Left exc -> putMVar result (Left exc)
-                Right () -> return ()
-        cont h result = do
+        loop h = do
+            l <- hGetLine h
+            onPutString handler l
+            if "SuperCollider 3 server ready" `isPrefixOf` l
+                then cont h
+                else loop h
+        cont h = do
             forkPipe onPutString h
             fd <- openTransport (networkPort rtOptions)
-            action fd >>= evaluate >>= putMVar result . Right
-            OSC.send fd quit
+            action fd `finally` OSC.send fd quit
         forkPipe f = forkIO . pipeOutput (f handler)
 
 -- ====================================================================
