@@ -100,9 +100,8 @@ withSynth serverOptions rtOptions handler action = do
     a <- loop hOut
     e <- takeMVar exitCode
     case e of
-        ExitSuccess -> return ()
+        ExitSuccess -> return a
         ExitFailure _ -> throw e
-    return a
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
         loop h = do
