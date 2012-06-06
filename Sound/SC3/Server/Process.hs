@@ -3,7 +3,7 @@
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
 module Sound.SC3.Server.Process
-  ( module Sound.SC3.Server.Options
+  ( module Sound.SC3.Server.Process.Options
   , OutputHandler(..)
   , defaultOutputHandler
   , NetworkTransport
@@ -20,8 +20,8 @@ import           Data.List (isPrefixOf)
 import           Sound.OpenSoundControl (Transport(..))
 import qualified Sound.OpenSoundControl as OSC
 import           Sound.SC3 (quit)
-import           Sound.SC3.Server.Options
 import           Sound.SC3.Server.Process.CommandLine
+import           Sound.SC3.Server.Process.Options
 import           System.Exit (ExitCode(..))
 import           System.IO (Handle, hFlush, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
 import           System.Process (runInteractiveProcess, waitForProcess)

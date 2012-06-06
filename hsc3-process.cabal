@@ -1,7 +1,10 @@
 Name:               hsc3-process
 Version:            0.7.0
 Synopsis:           Create and control scsynth processes
-Description:        Create and control scsynth processes.
+Description:
+    This library allows to create and control scsynth processes.
+    .
+    ChangeLog: <https://github.com/kaoskorobase/hsc3-process/blob/master/ChangeLog.md>
 License:            GPL
 License-File:       LICENSE
 Category:           Sound
@@ -19,19 +22,18 @@ Extra-Source-Files: examples/config.hs
                     examples/sine.hs
 
 Library
-  Exposed-Modules:  Sound.SC3.Server.Internal
-                    Sound.SC3.Server.Options
-                    Sound.SC3.Server.Process
+  Exposed-Modules:  Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.CommandLine
+                    Sound.SC3.Server.Process.Options
 
   Build-Depends:    base >= 3 && < 5
                   , bindings-sc3 >= 0.3.0
-                  , bytestring >= 0.8
-                  , containers >= 0.2
-                  , hosc >= 0.7
-                  , hsc3 >= 0.7
-                  , process >= 1.0
-                  , transformers >= 0.2.0
+                  , bytestring >= 0.8 && < 0.10
+                  , containers >= 0.2 && < 0.6
+                  , hosc >= 0.7 && < 0.12
+                  , hsc3 >= 0.7 && < 0.12
+                  , process >= 1.0 && < 1.2
+                  , transformers >= 0.2 && < 0.4
 
   Ghc-Options:      -W
  

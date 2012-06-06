@@ -6,7 +6,7 @@ module Sound.SC3.Server.Process.CommandLine (
 
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
-import Sound.SC3.Server.Options
+import Sound.SC3.Server.Process.Options
 
 -- ====================================================================
 -- scsynth commandline options

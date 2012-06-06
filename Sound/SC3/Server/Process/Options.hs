@@ -1,4 +1,4 @@
-module Sound.SC3.Server.Options
+module Sound.SC3.Server.Process.Options
   ( Verbosity(..)
   , ServerOptions(..)
   , defaultServerOptions
