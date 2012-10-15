@@ -27,7 +27,6 @@ Library
                     Sound.SC3.Server.Process.Options
 
   Build-Depends:    base >= 3 && < 5
-                  , bindings-sc3 >= 0.3.0
                   , bytestring >= 0.8 && < 0.10
                   , containers >= 0.2 && < 0.6
                   , hosc >= 0.7 && < 0.12
