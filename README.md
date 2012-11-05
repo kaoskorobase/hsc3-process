@@ -1,4 +1,4 @@
-[**hsc3-process** is a Haskell library that facilitates launching external [SuperCollider][] `scsynth` processes for realtime or non-realtime processing.
+**hsc3-process** is a Haskell library that facilitates launching external [SuperCollider][] `scsynth` processes for realtime or non-realtime processing.
 
 ### Installation
 
