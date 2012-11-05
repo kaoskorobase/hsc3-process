@@ -1,6 +1,24 @@
-**hsc3-process** is a Haskell library that facilitates launching external [SuperCollider][] `scsynth` processes. It also provides an interface to `libscsynth`, which allows to use the [SuperCollider][] synthesis engine without starting a separate process.
+[**hsc3-process** is a Haskell library that facilitates launching external [SuperCollider][] `scsynth` processes for realtime or non-realtime processing.
 
-For more information please visit the [website][].
+### Installation
 
+    cabal install hsc3-process
+
+### Documentation
+
+* [Change log](https://github.com/kaoskorobase/hsc3-process/blob/master/ChangeLog.md)
+* [API documentation](http://hackage.haskell.org/package/hsc3-process)
+
+### Reporting bugs
+
+Please report bugs in our [issue tracker](https://github.com/kaoskorobase/hsc3-process/issues).
+
+### Development
+
+**hsc3-process**' source code is hosted at [github][]. You can check out a copy of the repository with the following command:
+
+    git clone git://github.com/kaoskorobase/hsc3-process.git
+
+[github]: https://github.com/kaoskorobase/hsc3-process
+[hackage]: http://hackage.haskell.org
 [supercollider]: http://supercollider.sourceforge.net
-[website]: http://space.k-hornz.de/software/hsc3-process
