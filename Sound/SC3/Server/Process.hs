@@ -151,5 +151,3 @@ withNRT serverOptions nrtOptions handler action = do
         (exe:args) = nrtCommandLine serverOptions nrtOptions { commandFilePath = Nothing }
         putStdout = pipeOutput (onPutString handler)
         putStderr = pipeOutput (onPutString handler)
-
--- EOF
