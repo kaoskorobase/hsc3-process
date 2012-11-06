@@ -11,19 +11,20 @@ module Sound.SC3.Server.Process
   , withSynth
   , withNRT ) where
 
-import           Control.Applicative
-import           Control.Concurrent
-import           Control.Exception
-import           Control.Monad (unless)
-import           Prelude hiding (catch)
+import           Control.Applicative ((<$>))
+import           Control.Concurrent (forkIO, killThread)
+import           Control.Concurrent.MVar (newEmptyMVar, putMVar, readMVar, takeMVar)
+import           Control.Exception (Exception(toException), SomeException, bracket, catch, catchJust, finally, throw, try)
 import           Data.List (isPrefixOf)
+import           Control.Monad (liftM)
 import           Sound.OpenSoundControl (Transport(..))
 import qualified Sound.OpenSoundControl as OSC
 import           Sound.SC3 (quit)
 import           Sound.SC3.Server.Process.CommandLine
 import           Sound.SC3.Server.Process.Options
 import           System.Exit (ExitCode(..))
-import           System.IO (Handle, hFlush, hGetLine, hIsEOF, hPutStrLn, stderr, stdout)
+import           System.IO (Handle, hFlush, hGetLine, hPutStrLn, stderr, stdout)
+import           System.IO.Error (isEOFError)
 import           System.Process (runInteractiveProcess, waitForProcess)
 
 localhost :: String
@@ -66,8 +67,17 @@ defaultOutputHandler = OutputHandler {
 -- ====================================================================
 -- Process helpers
 
+-- | Catch EOF errors.
+catchEOF :: IO a -> (SomeException -> IO a) -> IO a
+catchEOF = catchJust (\e -> if isEOFError e then Just (toException e) else Nothing)
+
+-- | Continuously pipe lines from a handle to an output function.
+--
+-- Stop when encountering EOF.
 pipeOutput :: (String -> IO ()) -> Handle -> IO ()
-pipeOutput f h = hIsEOF h >>= flip unless (hGetLine h >>= f >> pipeOutput f h)
+pipeOutput f h =
+    catchEOF (hGetLine h >>= f >> pipeOutput f h)
+             (\_ -> return ())
 
 -- ====================================================================
 -- * Realtime scsynth execution
@@ -97,10 +107,13 @@ withSynth serverOptions rtOptions handler action = do
     forkPipe onPutError hErr
     exitCode <- newEmptyMVar
     forkIO $ waitForProcess hProc >>= putMVar exitCode
-    a <- loop hOut
+    a <- catchEOF (liftM Right (loop hOut)) (return . Left)
     e <- takeMVar exitCode
     case e of
-        ExitSuccess -> return a
+        ExitSuccess ->
+            case a of
+                Left e -> throw e
+                Right a' -> return a'
         ExitFailure _ -> throw e
     where
         (exe:args) = rtCommandLine serverOptions rtOptions
