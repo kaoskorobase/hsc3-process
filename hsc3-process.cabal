@@ -1,5 +1,5 @@
 Name:               hsc3-process
-Version:            0.7.0
+Version:            0.8.0
 Synopsis:           Create and control scsynth processes
 Description:
     This library allows to create and control scsynth processes.
