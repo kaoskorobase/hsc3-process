@@ -161,6 +161,6 @@ withNRT serverOptions nrtOptions handler action = do
             killThread thread
             throw (toException exitCode)
     where
-        (exe:args) = nrtCommandLine serverOptions nrtOptions { commandFilePath = Nothing }
+        (exe:args) = nrtCommandLine serverOptions nrtOptions
         putStdout = pipeOutput (onPutString handler)
         putStderr = pipeOutput (onPutString handler)
