@@ -19,6 +19,12 @@ Please report bugs in our [issue tracker](https://github.com/kaoskorobase/hsc3-p
 
     git clone git://github.com/kaoskorobase/hsc3-process.git
 
+### Authors
+
+Copyright (c) Stefan Kersten and others 2008-2012 with contributions by
+
+* Rohan Drape
+
 [github]: https://github.com/kaoskorobase/hsc3-process
 [hackage]: http://hackage.haskell.org
 [supercollider]: http://supercollider.sourceforge.net
