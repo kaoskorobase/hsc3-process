@@ -10,11 +10,12 @@ module Sound.SC3.Server.Process.Options
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
   , NRTOptions(..)
+  , NRT_File_Format(..)
+  , NRT_Sample_Format(..)
   , defaultNRTOptions
   ) where
 
--- import           Control.Monad.Error
--- import qualified Data.ConfigFile as CF
+import Sound.SC3.Server.NRT (NRT_File_Format(..), NRT_Sample_Format(..))
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -40,18 +41,6 @@ instance Enum Verbosity where
     toEnum 2                  = VeryVerbose
     toEnum 3                  = ExtremelyVerbose
     toEnum _                  = error "Verbosity (toEnum): bad argument"
-
--- instance CF.Get_C Verbosity where
---     get parser section option = do
---         s <- CF.get parser section option
---         case s of
---             "Silent"           -> return Silent
---             "Quiet"            -> return Quiet
---             "Normal"           -> return Normal
---             "Verbose"          -> return Verbose
---             "VeryVerbose"      -> return VeryVerbose
---             "ExtremelyVerbose" -> return ExtremelyVerbose
---             _ -> throwError $ (CF.ParseError $ "Invalid Verbosity value: " ++ s, "")
 
 -- ====================================================================
 -- * Server options
@@ -167,8 +156,8 @@ data NRTOptions = NRTOptions {
   , inputFilePath      :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
   , outputFilePath     :: FilePath          -- ^ Path to output sound file
   , outputSampleRate   :: Int               -- ^ Output sound file sample rate
-  , outputHeaderFormat :: String            -- ^ Output sound file header format
-  , outputSampleFormat :: String            -- ^ Output sound file sample format
+  , outputHeaderFormat :: NRT_File_Format   -- ^ Output sound file header format
+  , outputSampleFormat :: NRT_Sample_Format -- ^ Output sound file sample format
 } deriving (Eq, Show)
 
 -- | Default non-realtime server options.
@@ -178,6 +167,6 @@ defaultNRTOptions = NRTOptions {
   , inputFilePath      = Nothing
   , outputFilePath     = "output.wav"
   , outputSampleRate   = 44100
-  , outputHeaderFormat = "wav"
-  , outputSampleFormat = "int16"
+  , outputHeaderFormat = WAVE
+  , outputSampleFormat = I16
   }

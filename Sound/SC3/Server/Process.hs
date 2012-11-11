@@ -14,11 +14,11 @@ module Sound.SC3.Server.Process
 import           Control.Applicative ((<$>))
 import           Control.Concurrent (forkIO, killThread)
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar, readMVar, takeMVar)
-import           Control.Exception (Exception(toException), SomeException, bracket, catch, catchJust, finally, throw, try)
+import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, finally, throw, try)
 import           Data.List (isPrefixOf)
 import           Control.Monad (liftM)
-import           Sound.OpenSoundControl (Transport(..))
-import qualified Sound.OpenSoundControl as OSC
+import           Sound.OSC.FD (Transport(..))
+import qualified Sound.OSC.FD as OSC
 import           Sound.SC3 (quit)
 import           Sound.SC3.Server.Process.CommandLine
 import           Sound.SC3.Server.Process.Options
@@ -39,8 +39,8 @@ checkPort _ p                         = p
 data NetworkTransport = forall t . Transport t => NetworkTransport t
 
 instance Transport NetworkTransport where
-    recv (NetworkTransport t) = recv t
-    send (NetworkTransport t) = send t
+    recvPacket (NetworkTransport t) = recvPacket t
+    sendOSC (NetworkTransport t) = sendOSC t
     close (NetworkTransport t) = close t
 
 -- | Open a network transport connected to a network port.
@@ -126,7 +126,7 @@ withSynth serverOptions rtOptions handler action = do
         cont h = do
             forkPipe onPutString h
             fd <- openTransport (networkPort rtOptions)
-            action fd `finally` OSC.send fd quit
+            action fd `finally` OSC.sendOSC fd quit
         forkPipe f = forkIO . pipeOutput (f handler)
 
 -- ====================================================================

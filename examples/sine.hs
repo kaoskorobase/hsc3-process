@@ -1,8 +1,7 @@
 import Control.Concurrent
-import Sound.OpenSoundControl (OSC(..), Time(..), Transport, pauseThread)
-import Sound.SC3
+import Sound.OSC.FD (Transport, pauseThread)
+import Sound.SC3.FD
 import Sound.SC3.Server.Process
-import System.Exit
 
 sine :: UGen
 sine = out 0 (mce2 (s 390) (s 400))
@@ -15,7 +14,7 @@ scmain fd = do
     pauseThread 10
     send fd quit
 
-main :: IO ()   
+main :: IO ()
 main = withSynth
         (defaultServerOptions
             { serverProgram = "scsynth"
