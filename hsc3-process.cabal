@@ -26,12 +26,12 @@ Library
                     Sound.SC3.Server.Process.Options
 
   Build-Depends:    base >= 3 && < 5
-                  , bytestring >= 0.8 && < 0.11
-                  , containers >= 0.2 && < 0.6
+                  , bytestring >= 0.8
+                  , containers >= 0.2
                   , hosc >= 0.12
                   , hsc3 >= 0.12
-                  , process >= 1.0 && < 1.2
-                  , transformers >= 0.2 && < 0.4
+                  , process >= 1.0
+                  , transformers >= 0.2
 
   Ghc-Options:      -W
  
