@@ -163,4 +163,4 @@ withNRT serverOptions nrtOptions handler action = do
     where
         (exe:args) = nrtCommandLine serverOptions nrtOptions
         putStdout = pipeOutput (onPutString handler)
-        putStderr = pipeOutput (onPutString handler)
+        putStderr = pipeOutput (onPutError handler)
