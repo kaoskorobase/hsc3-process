@@ -6,7 +6,7 @@ module Sound.SC3.Server.Process.CommandLine (
 
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
-import Sound.SC3.Server.NRT (nrt_sf_pp)
+import Sound.SC3.Server.Enum
 import Sound.SC3.Server.Process.Options
 
 -- ====================================================================
@@ -35,11 +35,11 @@ instance Option (Verbosity) where
 instance Option [FilePath] where
     showOption = intercalate ":"
 
-instance Option NRT_File_Format where
-    showOption = show
+instance Option SoundFileFormat where
+    showOption = soundFileFormatString
 
-instance Option NRT_Sample_Format where
-    showOption = nrt_sf_pp
+instance Option SampleFormat where
+    showOption = sampleFormatString
 
 data ToOption a = forall b . Option b => ToOption (a -> b)
 
@@ -103,7 +103,7 @@ mkNRTOptions options =
         , fromMaybe "_" . inputFilePath
         , outputFilePath
         , showOption . outputSampleRate
-        , showOption . outputHeaderFormat
+        , showOption . outputSoundFileFormat
         , showOption . outputSampleFormat ]
 
 -- | Construct the scsynth command line from 'ServerOptions' and 'RTOptions'.

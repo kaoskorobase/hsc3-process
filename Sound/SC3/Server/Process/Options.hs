@@ -10,12 +10,10 @@ module Sound.SC3.Server.Process.Options
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
   , NRTOptions(..)
-  , NRT_File_Format(..)
-  , NRT_Sample_Format(..)
   , defaultNRTOptions
   ) where
 
-import Sound.SC3.Server.NRT (NRT_File_Format(..), NRT_Sample_Format(..))
+import Sound.SC3.Server.Enum
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -152,21 +150,21 @@ defaultRTOptionsTCP = defaultRTOptions { networkPort = defaultTCPPort }
 
 -- | Non-realtime server options.
 data NRTOptions = NRTOptions {
-    commandFilePath    :: Maybe FilePath    -- ^ Path to OSC command file ('Nothing' for stdin)
-  , inputFilePath      :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
-  , outputFilePath     :: FilePath          -- ^ Path to output sound file
-  , outputSampleRate   :: Int               -- ^ Output sound file sample rate
-  , outputHeaderFormat :: NRT_File_Format   -- ^ Output sound file header format
-  , outputSampleFormat :: NRT_Sample_Format -- ^ Output sound file sample format
+    commandFilePath       :: Maybe FilePath    -- ^ Path to OSC command file ('Nothing' for stdin)
+  , inputFilePath         :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
+  , outputFilePath        :: FilePath          -- ^ Path to output sound file
+  , outputSampleRate      :: Int               -- ^ Output sound file sample rate
+  , outputSoundFileFormat :: SoundFileFormat   -- ^ Output sound file header format (since 0.8)
+  , outputSampleFormat    :: SampleFormat      -- ^ Output sound file sample format
 } deriving (Eq, Show)
 
 -- | Default non-realtime server options.
 defaultNRTOptions :: NRTOptions
 defaultNRTOptions = NRTOptions {
-    commandFilePath    = Nothing
-  , inputFilePath      = Nothing
-  , outputFilePath     = "output.wav"
-  , outputSampleRate   = 44100
-  , outputHeaderFormat = WAVE
-  , outputSampleFormat = I16
+    commandFilePath       = Nothing
+  , inputFilePath         = Nothing
+  , outputFilePath        = "output.wav"
+  , outputSampleRate      = 44100
+  , outputSoundFileFormat = Wave
+  , outputSampleFormat    = PcmInt16
   }

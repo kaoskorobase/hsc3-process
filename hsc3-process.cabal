@@ -28,8 +28,8 @@ Library
   Build-Depends:    base >= 3 && < 5
                   , bytestring >= 0.8
                   , containers >= 0.2
-                  , hosc >= 0.12
-                  , hsc3 >= 0.12
+                  , hosc >= 0.13
+                  , hsc3 >= 0.13
                   , process >= 1.0
                   , transformers >= 0.2
 

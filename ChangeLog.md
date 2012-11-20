@@ -1,7 +1,8 @@
 ### v0.8.0
 
 * Upgrade to `hosc 0.12` and `hsc3 0.12`
-* Use `Sound.SC3.Server.NRT` data types for NRT file format
+* Use `Sound.SC3.Server.Enum` data types for NRT file format
+* Rename `outputHeaderFormat` to `outputSoundFileFormat`
 
 ### v0.7.0
 
