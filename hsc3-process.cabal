@@ -14,7 +14,7 @@ Maintainer:         kaoskorobase@gmail.com
 Homepage:           https://github.com/kaoskorobase/hsc3-process
 Tested-With:        GHC == 7.4
 Build-Type:         Simple
-Cabal-Version:      >= 1.6
+Cabal-Version:      >= 1.8
 
 Flag build-examples
     Description:    Build example programs
@@ -41,23 +41,27 @@ Source-Repository head
   Location:         git://github.com/kaoskorobase/hsc3-process.git
 
 Executable hsc3-sine
-    Main-Is: examples/sine.hs
+    Main-Is: sine.hs
+    Hs-Source-Dirs: examples
     if flag(build-examples)
         Buildable: True
     else
         Buildable: False
     Build-Depends:
         base >= 4.3 && < 5
+      , hsc3-process >= 0.8
     Ghc-Options:
         -Wall -rtsopts -threaded
 
 Executable hsc3-nrt
-    Main-Is: examples/nrt.hs
+    Main-Is: nrt.hs
+    Hs-Source-Dirs: examples
     if flag(build-examples)
         Buildable: True
     else
         Buildable: False
     Build-Depends:
         base >= 4.3 && < 5
+      , hsc3-process >= 0.8
     Ghc-Options:
         -Wall -rtsopts -threaded
