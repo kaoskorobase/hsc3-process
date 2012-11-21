@@ -1,9 +1,8 @@
 import Control.Monad (forM_)
 import Sound.OpenSoundControl (bundle)
-import Sound.OSC.FD (Transport, immediately, Time(NTPr))
+import Sound.OSC.FD (Time(NTPr))
 import Sound.SC3.FD
 import Sound.SC3.Server.Process
-import Sound.SC3.Server.NRT (NRT(..), putNRT)
 
 sine :: UGen
 sine = out 0 (mce2 (s (freq*0.99)) (s (freq*1.01)))
