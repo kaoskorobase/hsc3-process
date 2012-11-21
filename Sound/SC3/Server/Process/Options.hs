@@ -11,6 +11,7 @@ module Sound.SC3.Server.Process.Options
   , RTOptions(..)
   , onPort
   , jackDeviceName
+  , withJackDeviceName
   , defaultRTOptions
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
@@ -197,8 +198,23 @@ onPort port = def { networkPort = port }
 --   client name.
 --
 -- Since 0.8.0
-jackDeviceName :: Maybe String -> String -> String
+jackDeviceName ::
+    Maybe String  -- ^ Optional JACK server name
+ -> String        -- ^ JACK client name
+ -> String        -- ^ Hardware device name
 jackDeviceName = (++) . maybe "" ((++":"))
+
+-- | Modify options to use a jack device name based on an optional server name
+--   and a client name.
+--
+-- Since 0.8.0
+withJackDeviceName ::
+    Maybe String  -- ^ Optional JACK server name
+ -> String        -- ^ JACK client name
+ -> RTOptions     -- ^ Options to modify
+ -> RTOptions     -- ^ Modified options
+withJackDeviceName serverName clientName options = options {
+    hardwareDeviceName = Just (jackDeviceName serverName clientName) }
 
 -- | Default realtime server options (UDP transport).
 defaultRTOptionsUDP :: RTOptions
