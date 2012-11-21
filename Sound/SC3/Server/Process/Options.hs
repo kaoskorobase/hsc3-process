@@ -2,6 +2,9 @@ module Sound.SC3.Server.Process.Options
   ( Verbosity(..)
   , ServerOptions(..)
   , defaultServerOptions
+  , fromBuildDirectory
+  , fromPrefix
+  , fromApplicationBundle
   , NetworkPort(..)
   , defaultUDPPort
   , defaultTCPPort
@@ -17,6 +20,7 @@ module Sound.SC3.Server.Process.Options
 
 import Data.Default (Default(..))
 import Sound.SC3.Server.Enum
+import System.FilePath ((</>))
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
 data Verbosity =
@@ -94,6 +98,34 @@ defaultServerOptions = ServerOptions {
   , ugenPluginPath             = Nothing
   , restrictedPath             = Nothing
   }
+
+-- | Run @scsynth@ from a SuperCollider build directory.
+--
+-- Since 0.8.0
+fromBuildDirectory :: FilePath -> ServerOptions -> ServerOptions
+fromBuildDirectory dir options = options {
+    serverProgram = dir </> "server/scsynth/scsynth"
+  , ugenPluginPath = Just [ dir </> "server/plugins" ]
+  }
+
+-- | Run @scsynth@ from a Linux installation prefix.
+--
+-- Since 0.8.0
+fromPrefix :: FilePath -> ServerOptions -> ServerOptions
+fromPrefix dir options = options {
+    serverProgram = dir </> "bin/scsynth"
+  , ugenPluginPath = Just [ dir </> "lib/SuperCollider/plugins" ]
+  }
+
+-- | Run @scsynth@ from an OSX application bundle.
+--
+-- Since 0.8.0
+fromApplicationBundle :: FilePath -> ServerOptions -> ServerOptions
+fromApplicationBundle dir options = options {
+    serverProgram = resources </> "scsynth"
+  , ugenPluginPath = Just [ resources </> "plugins" ]
+  }
+  where resources = dir </> "Contents/Resources"
 
 -- ====================================================================
 -- * Realtime options
