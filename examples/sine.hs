@@ -12,7 +12,6 @@ scmain fd = do
     reset fd
     play fd sine
     pauseThread 10
-    send fd quit
 
 main :: IO ()
 main = withSynth
