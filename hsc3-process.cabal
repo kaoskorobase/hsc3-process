@@ -28,6 +28,7 @@ Library
   Build-Depends:    base >= 3 && < 5
                   , bytestring >= 0.8
                   , containers >= 0.2
+                  , data-default >= 0.5
                   , hosc >= 0.13
                   , hsc3 >= 0.13
                   , process >= 1.0

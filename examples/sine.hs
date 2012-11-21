@@ -1,4 +1,5 @@
 import Control.Concurrent
+import Data.Default (def)
 import Sound.OSC.FD (Transport, pauseThread)
 import Sound.SC3.FD
 import Sound.SC3.Server.Process
@@ -15,10 +16,8 @@ scmain fd = do
 
 main :: IO ()
 main = withSynth
-        (defaultServerOptions
-            { serverProgram = "scsynth"
-            , loadSynthDefs = False })
-        (defaultRTOptionsUDP
-            { networkPort = UDPPort 2278 })
-        defaultOutputHandler
+        (def { serverProgram = "scsynth"
+             , loadSynthDefs = False })
+        (def { networkPort = UDPPort 2278 })
+        def
         scmain

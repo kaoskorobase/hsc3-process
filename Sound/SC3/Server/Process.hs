@@ -18,6 +18,7 @@ import           Control.Concurrent (forkIO, rtsSupportsBoundThreads)
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, throwIO)
 import           Control.Monad (liftM, unless)
+import           Data.Default (Default(..))
 import           Data.List (isPrefixOf)
 import           Sound.OSC.FD (Transport(..))
 import qualified Sound.OSC.FD as OSC
@@ -59,8 +60,12 @@ data OutputHandler = OutputHandler {
   , onPutError  :: String -> IO ()     -- ^ Handle one line of error output
   }
 
+instance Default OutputHandler where
+  def = defaultOutputHandler
+
 -- | Default IO handler, writing to stdout and stderr, respectively.
 defaultOutputHandler :: OutputHandler
+{-# DEPRECATED defaultOutputHandler "Use Data.Default.Default instance instead" #-}
 defaultOutputHandler = OutputHandler {
     onPutString = \s -> hPutStrLn stdout s >> hFlush stdout
   , onPutError  = \s -> hPutStrLn stderr s >> hFlush stderr

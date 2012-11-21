@@ -1,4 +1,5 @@
 import Control.Monad (forM_)
+import Data.Default (def)
 import Sound.OpenSoundControl (bundle)
 import Sound.OSC.FD (Time(NTPr))
 import Sound.SC3.FD
@@ -19,7 +20,7 @@ score freq = NRT $ map (\(t, ms) -> bundle (NTPr t) ms) $ [
 main :: IO ()
 main = forM_ [200,400,800] $ \freq ->
   withNRT
-    defaultServerOptions
-    (defaultNRTOptions { outputFilePath = "output_" ++ show freq ++ ".wav" })
-    defaultOutputHandler
+    def
+    (def { outputFilePath = "output_" ++ show freq ++ ".wav" })
+    def
     (flip putNRT (score freq))

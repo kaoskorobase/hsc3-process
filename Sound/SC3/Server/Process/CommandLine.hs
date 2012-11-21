@@ -4,6 +4,7 @@ module Sound.SC3.Server.Process.CommandLine (
   , nrtCommandLine
 ) where
 
+import Data.Default (def)
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import Sound.SC3.Server.Enum
@@ -63,7 +64,7 @@ flattenOptions [] = []
 flattenOptions ((a, b):xs) = a : b : flattenOptions xs
 
 mkServerOptions :: ServerOptions -> [String]
-mkServerOptions options = (flattenOptions.mkOptions defaultServerOptions options) [ 
+mkServerOptions options = (flattenOptions.mkOptions def options) [ 
     ("-c" , ToOption numberOfControlBusChannels)
   , ("-a" , ToOption numberOfAudioBusChannels  )
   , ("-i" , ToOption numberOfInputBusChannels  )
@@ -86,7 +87,7 @@ mkRTOptions options =
         UDPPort p -> ["-u", showOption p]
         TCPPort p -> ["-t", showOption p])
     ++
-    (flattenOptions $ mkOptions defaultRTOptions options $
+    (flattenOptions $ mkOptions def options $
         [ ("-R" , ToOption useZeroconf          )
         , ("-H" , ToOption hardwareDeviceName   )
         , ("-Z" , ToOption hardwareBufferSize   )

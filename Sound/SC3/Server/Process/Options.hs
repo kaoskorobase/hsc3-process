@@ -6,6 +6,7 @@ module Sound.SC3.Server.Process.Options
   , defaultUDPPort
   , defaultTCPPort
   , RTOptions(..)
+  , onPort
   , defaultRTOptions
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
@@ -13,6 +14,7 @@ module Sound.SC3.Server.Process.Options
   , defaultNRTOptions
   ) where
 
+import Data.Default (Default(..))
 import Sound.SC3.Server.Enum
 
 -- | Used with the 'verbosity' field in 'ServerOptions'.
@@ -40,6 +42,9 @@ instance Enum Verbosity where
     toEnum 3                  = ExtremelyVerbose
     toEnum _                  = error "Verbosity (toEnum): bad argument"
 
+instance Default Verbosity where
+  def = Normal
+
 -- ====================================================================
 -- * Server options
 
@@ -64,8 +69,12 @@ data ServerOptions = ServerOptions {
   , restrictedPath              :: Maybe FilePath    -- ^ Sandbox path to restrict OSC command filesystem access
   } deriving (Eq, Show)
 
+instance Default ServerOptions where
+  def = defaultServerOptions
+
 -- | Default server options.
 defaultServerOptions :: ServerOptions
+{-# DEPRECATED defaultServerOptions "Use Data.Default.Default instance instead" #-}
 defaultServerOptions = ServerOptions {
     serverProgram              = "scsynth"
   , numberOfControlBusChannels = 4096
@@ -80,7 +89,7 @@ defaultServerOptions = ServerOptions {
   , numberOfWireBuffers        = 64
   , numberOfRandomSeeds        = 64
   , loadSynthDefs              = True
-  , verbosity                  = Normal
+  , verbosity                  = def
   , ugenPluginPath             = Nothing
   , restrictedPath             = Nothing
   }
@@ -88,10 +97,14 @@ defaultServerOptions = ServerOptions {
 -- ====================================================================
 -- * Realtime options
 
+-- | Network port.
 data NetworkPort =
     UDPPort Int
   | TCPPort Int
   deriving (Eq, Show)
+
+instance Default NetworkPort where
+  def = defaultUDPPort
 
 -- | Default network port number.
 defaultPortNumber :: Int
@@ -121,11 +134,15 @@ data RTOptions = RTOptions {
   , outputStreamsEnabled    :: Maybe Int       -- ^ Enabled output streams (CoreAudio only)
   } deriving (Eq, Show)
 
+instance Default RTOptions where
+  def = defaultRTOptions
+
 -- | Default realtime server options.
 defaultRTOptions :: RTOptions
+{-# DEPRECATED defaultRTOptions "Use Data.Default.Default instance instead" #-}
 defaultRTOptions = RTOptions {
     -- Network control
-    networkPort             = defaultUDPPort
+    networkPort             = def
   , useZeroconf             = False
   , maxNumberOfLogins       = 16
   , sessionPassword         = Nothing
@@ -137,12 +154,18 @@ defaultRTOptions = RTOptions {
   , outputStreamsEnabled    = Nothing
   }
 
+-- | Create RTOptions with a specific network port.
+onPort :: NetworkPort -> RTOptions
+onPort port = def { networkPort = port }
+
 -- | Default realtime server options (UDP transport).
 defaultRTOptionsUDP :: RTOptions
+{-# DEPRECATED defaultRTOptionsUDP "Use 'onPort defaultUDPPort' instead" #-}
 defaultRTOptionsUDP =  defaultRTOptions { networkPort = defaultUDPPort }
 
 -- | Default realtime server options (TCP transport).
 defaultRTOptionsTCP :: RTOptions
+{-# DEPRECATED defaultRTOptionsTCP "Use 'onPort defaultTCPPort' instead" #-}
 defaultRTOptionsTCP = defaultRTOptions { networkPort = defaultTCPPort }
 
 -- ====================================================================
@@ -157,8 +180,12 @@ data NRTOptions = NRTOptions {
   , outputSampleFormat    :: SampleFormat      -- ^ Output sound file sample format
 } deriving (Eq, Show)
 
+instance Default NRTOptions where
+  def = defaultNRTOptions
+
 -- | Default non-realtime server options.
 defaultNRTOptions :: NRTOptions
+{-# DEPRECATED defaultNRTOptions "Use Data.Default.Default instance instead" #-}
 defaultNRTOptions = NRTOptions {
     inputFilePath         = Nothing
   , outputFilePath        = "output.wav"
