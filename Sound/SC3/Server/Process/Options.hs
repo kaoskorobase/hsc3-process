@@ -150,8 +150,7 @@ defaultRTOptionsTCP = defaultRTOptions { networkPort = defaultTCPPort }
 
 -- | Non-realtime server options.
 data NRTOptions = NRTOptions {
-    commandFilePath       :: Maybe FilePath    -- ^ Path to OSC command file ('Nothing' for stdin)
-  , inputFilePath         :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
+    inputFilePath         :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
   , outputFilePath        :: FilePath          -- ^ Path to output sound file
   , outputSampleRate      :: Int               -- ^ Output sound file sample rate
   , outputSoundFileFormat :: SoundFileFormat   -- ^ Output sound file header format (since 0.8)
@@ -161,8 +160,7 @@ data NRTOptions = NRTOptions {
 -- | Default non-realtime server options.
 defaultNRTOptions :: NRTOptions
 defaultNRTOptions = NRTOptions {
-    commandFilePath       = Nothing
-  , inputFilePath         = Nothing
+    inputFilePath         = Nothing
   , outputFilePath        = "output.wav"
   , outputSampleRate      = 44100
   , outputSoundFileFormat = Wave

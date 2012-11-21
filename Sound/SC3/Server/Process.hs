@@ -2,19 +2,21 @@
            , ScopedTypeVariables #-}
 -- | This module includes utilities for spawning an external scsynth process,
 -- either for realtime or non-realtime execution.
-module Sound.SC3.Server.Process
-  ( module Sound.SC3.Server.Process.Options
-  , OutputHandler(..)
-  , defaultOutputHandler
-  , NetworkTransport
-  , withTransport
-  , withSynth
-  , withNRT ) where
+module Sound.SC3.Server.Process (
+  module Sound.SC3.Server.Process.Options
+, OutputHandler(..)
+, defaultOutputHandler
+, NetworkTransport
+, withTransport
+, withSynth
+, runNRT
+, withNRT
+) where
 
 import           Control.Applicative ((<$>))
-import           Control.Concurrent (forkIO, killThread)
-import           Control.Concurrent.MVar (newEmptyMVar, putMVar, readMVar, takeMVar)
-import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, finally, throw, try)
+import           Control.Concurrent (forkIO)
+import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, throwIO)
 import           Data.List (isPrefixOf)
 import           Control.Monad (liftM)
 import           Sound.OSC.FD (Transport(..))
@@ -25,7 +27,7 @@ import           Sound.SC3.Server.Process.Options
 import           System.Exit (ExitCode(..))
 import           System.IO (Handle, hFlush, hGetLine, hPutStrLn, stderr, stdout)
 import           System.IO.Error (isEOFError)
-import           System.Process (runInteractiveProcess, waitForProcess)
+import           System.Process (rawSystem, runInteractiveProcess, waitForProcess)
 
 localhost :: String
 localhost = "127.0.0.1"
@@ -82,11 +84,12 @@ pipeOutput f h =
 -- ====================================================================
 -- * Realtime scsynth execution
 
+-- | Open a transport to a running @scsynth@ process determined by 'networkPort'.
 withTransport ::
-    ServerOptions
- -> RTOptions
- -> (NetworkTransport -> IO a)
- -> IO a
+    ServerOptions               -- ^ General server options
+ -> RTOptions                   -- ^ Realtime server options
+ -> (NetworkTransport -> IO a)  -- ^ Action to execute with the transport
+ -> IO a                        -- ^ Action result
 withTransport _ rtOptions = bracket (openTransport (networkPort rtOptions)) OSC.close
 
 -- | Execute a realtime instance of @scsynth@ with 'Transport' t.
@@ -94,73 +97,83 @@ withTransport _ rtOptions = bracket (openTransport (networkPort rtOptions)) OSC.
 -- The spawned @scsynth@ is sent a @\/quit@ message after the supplied action
 -- returns.
 --
--- /NOTE/: When compiling executables with GHC, the @-threaded@ option should
--- be passed, otherwise the I\/O handlers will not work correctly.
+-- GHC Note: in order to call @withSynth@ without blocking all the other threads
+-- in the system, you must compile the program with @-threaded@.
 withSynth ::
-    ServerOptions
- -> RTOptions
- -> OutputHandler
- -> (NetworkTransport -> IO a)
- -> IO a
+    ServerOptions               -- ^ General server options
+ -> RTOptions                   -- ^ Realtime server options
+ -> OutputHandler               -- ^ Output handler
+ -> (NetworkTransport -> IO a)  -- ^ Action to execute with the transport
+ -> IO a                        -- ^ Action result
 withSynth serverOptions rtOptions handler action = do
-    (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-    forkPipe onPutError hErr
-    exitCode <- newEmptyMVar
-    forkIO $ waitForProcess hProc >>= putMVar exitCode
-    a <- catchEOF (liftM Right (loop hOut)) (return . Left)
-    e <- takeMVar exitCode
-    case e of
-        ExitSuccess ->
-            case a of
-                Left e -> throw e
-                Right a' -> return a'
-        ExitFailure _ -> throw e
-    where
-        (exe:args) = rtCommandLine serverOptions rtOptions
-        loop h = do
-            l <- hGetLine h
-            onPutString handler l
-            if "SuperCollider 3 server ready" `isPrefixOf` l
-                then cont h
-                else loop h
-        cont h = do
-            forkPipe onPutString h
-            fd <- openTransport (networkPort rtOptions)
-            action fd `finally` OSC.sendOSC fd quit
-        forkPipe f = forkIO . pipeOutput (f handler)
+  (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
+  forkPipe onPutError hErr
+  processResult <- newEmptyMVar
+  forkIO $ waitForProcess hProc >>= putMVar processResult
+  -- Prioritize process exit code over EOF exception.
+  result <- catchEOF (liftM Right (loop hOut)) (return . Left)
+  exitCode <- takeMVar processResult
+  case exitCode of
+    ExitSuccess ->
+      case result of
+        Left ex -> throwIO ex
+        Right a -> return a
+    ExitFailure _ -> throwIO exitCode
+  where
+    (exe:args) = rtCommandLine serverOptions rtOptions
+    loop h = do
+      l <- hGetLine h
+      onPutString handler l
+      if "SuperCollider 3 server ready" `isPrefixOf` l
+        then cont h
+        else loop h
+    cont h = do
+      forkPipe onPutString h
+      bracket (openTransport (networkPort rtOptions))
+              (flip OSC.sendOSC quit)
+              action
+    forkPipe f = forkIO . pipeOutput (f handler)
 
 -- ====================================================================
 -- * Non-Realtime scsynth execution
 
--- | Execute a non-realtime instance of @scsynth@ and return 'ExitCode' when
--- the process exists.
+-- | Render a NRT score by executing an instance of @scsynth@ and return the
+--   process' exit code.
+runNRT ::
+    ServerOptions       -- ^ General server options
+ -> NRTOptions          -- ^ Non-realtime server options
+ -> FilePath            -- ^ NRT score file path
+ -> IO ExitCode         -- ^ Process exit code
+runNRT serverOptions nrtOptions commandFilePath =
+   let exe:args = nrtCommandLine serverOptions nrtOptions (Just commandFilePath)
+   in rawSystem exe args
+
+-- | Execute a non-realtime instance of @scsynth@ and pass the process' input
+--   handle to /Action/ and return the result.
+--
+-- GHC Note: in order to call @withNRT@ without blocking all the other threads
+-- in the system, you must compile the program with @-threaded@.
 withNRT ::
-    ServerOptions
- -> NRTOptions
- -> OutputHandler
- -> (Handle -> IO a)
- -> IO a
+    ServerOptions       -- ^ General server options
+ -> NRTOptions          -- ^ Non-realtime server options
+ -> OutputHandler       -- ^ Output handler
+ -> (Handle -> IO a)    -- ^ Action
+ -> IO a                -- ^ Action result
 withNRT serverOptions nrtOptions handler action = do
-    (hIn, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
-    forkIO $ putStdout hOut
-    forkIO $ putStderr hErr
-    result <- newEmptyMVar
-    thread <- forkIO $ do
-        a <- try (action hIn)
-        case a of
-            Left (ex :: SomeException) -> putMVar result (Left ex)
-            _                          -> putMVar result a
-    exitCode <- waitForProcess hProc
+    (hIn, hOut, hErr, pid) <- runInteractiveProcess exe args Nothing Nothing
+    forkPipe onPutString hOut
+    forkPipe onPutError hErr
+    processResult <- newEmptyMVar
+    forkIO $ waitForProcess pid >>= putMVar processResult
+    -- Prioritize process exit code over EOF exception.
+    result <- catchEOF (liftM Right (action hIn)) (return . Left)
+    exitCode <- takeMVar processResult
     case exitCode of
-        ExitSuccess -> do
-            a <- readMVar result
-            case a of
-                Left e  -> throw e
-                Right a -> return a
-        ExitFailure _ -> do
-            killThread thread
-            throw (toException exitCode)
+        ExitSuccess ->
+          case result of
+            Left ex -> throwIO ex
+            Right a -> return a
+        ExitFailure _ -> throwIO exitCode
     where
-        (exe:args) = nrtCommandLine serverOptions nrtOptions
-        putStdout = pipeOutput (onPutString handler)
-        putStderr = pipeOutput (onPutError handler)
+        (exe:args) = nrtCommandLine serverOptions nrtOptions Nothing
+        forkPipe f = forkIO . pipeOutput (f handler)

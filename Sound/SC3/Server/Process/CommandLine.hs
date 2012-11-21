@@ -96,20 +96,24 @@ mkRTOptions options =
         , ("-I" , ToOption inputStreamsEnabled  )
         , ("-O" , ToOption outputStreamsEnabled ) ])
 
-mkNRTOptions :: NRTOptions -> [String]
-mkNRTOptions options =
-    "-N" : map ($ options) [
-          fromMaybe "_" . commandFilePath
-        , fromMaybe "_" . inputFilePath
-        , outputFilePath
-        , showOption . outputSampleRate
-        , showOption . outputSoundFileFormat
-        , showOption . outputSampleFormat ]
+mkNRTOptions :: NRTOptions -> Maybe FilePath -> [String]
+mkNRTOptions options commandFilePath =
+    "-N" : [
+          fromMaybe "_" commandFilePath
+        , fromMaybe "_" (inputFilePath options)
+        , outputFilePath options
+        , showOption (outputSampleRate options)
+        , showOption (outputSoundFileFormat options)
+        , showOption (outputSampleFormat options) ]
 
 -- | Construct the scsynth command line from 'ServerOptions' and 'RTOptions'.
 rtCommandLine :: ServerOptions -> RTOptions -> [String]
-rtCommandLine serverOptions rtOptions = (serverProgram serverOptions : mkServerOptions serverOptions) ++ mkRTOptions rtOptions
+rtCommandLine serverOptions rtOptions =
+    (serverProgram serverOptions : mkServerOptions serverOptions)
+ ++ mkRTOptions rtOptions
 
 -- | Construct the scsynth command line from 'ServerOptions' and 'NRTOptions'.
-nrtCommandLine :: ServerOptions -> NRTOptions -> [String]
-nrtCommandLine serverOptions nrtOptions = (serverProgram serverOptions : mkServerOptions serverOptions) ++ mkNRTOptions nrtOptions
+nrtCommandLine :: ServerOptions -> NRTOptions -> Maybe FilePath -> [String]
+nrtCommandLine serverOptions nrtOptions commandFilePath =
+    (serverProgram serverOptions : mkServerOptions serverOptions)
+ ++ mkNRTOptions nrtOptions commandFilePath
