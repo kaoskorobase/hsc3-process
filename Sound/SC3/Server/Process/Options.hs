@@ -106,8 +106,7 @@ defaultServerOptions = ServerOptions {
 fromBuildDirectory :: FilePath -> ServerOptions -> ServerOptions
 fromBuildDirectory dir options = options {
     serverProgram = dir </> "server/scsynth/scsynth"
-  , ugenPluginPath = Just [ dir </> "server/plugins" ]
-  }
+  , ugenPluginPath = Just [ dir </> "server/plugins" ] }
 
 -- | Run @scsynth@ from a Linux installation prefix.
 --
@@ -115,8 +114,7 @@ fromBuildDirectory dir options = options {
 fromPrefix :: FilePath -> ServerOptions -> ServerOptions
 fromPrefix dir options = options {
     serverProgram = dir </> "bin/scsynth"
-  , ugenPluginPath = Just [ dir </> "lib/SuperCollider/plugins" ]
-  }
+  , ugenPluginPath = Just [ dir </> "lib/SuperCollider/plugins" ] }
 
 -- | Run @scsynth@ from an OSX application bundle.
 --
@@ -124,8 +122,7 @@ fromPrefix dir options = options {
 fromApplicationBundle :: FilePath -> ServerOptions -> ServerOptions
 fromApplicationBundle dir options = options {
     serverProgram = resources </> "scsynth"
-  , ugenPluginPath = Just [ resources </> "plugins" ]
-  }
+  , ugenPluginPath = Just [ resources </> "plugins" ] }
   where resources = dir </> "Contents/Resources"
 
 -- ====================================================================
