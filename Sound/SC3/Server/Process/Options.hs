@@ -7,6 +7,7 @@ module Sound.SC3.Server.Process.Options
   , defaultTCPPort
   , RTOptions(..)
   , onPort
+  , jackDeviceName
   , defaultRTOptions
   , defaultRTOptionsUDP
   , defaultRTOptionsTCP
@@ -127,7 +128,7 @@ data RTOptions = RTOptions {
   , maxNumberOfLogins       :: Int             -- ^ Max number of supported logins if 'sessionPassword' is set
   , sessionPassword         :: Maybe String    -- ^ Session password
   -- Audio device control
-  , hardwareDeviceName      :: Maybe String    -- ^ Hardware device name (JACK client:server name on Linux)
+  , hardwareDeviceName      :: Maybe String    -- ^ Hardware device name (see also 'jackDeviceName')
   , hardwareBufferSize      :: Int             -- ^ Hardware buffer size (no effect with JACK)
   , hardwareSampleRate      :: Int             -- ^ Hardware buffer size (no effect with JACK)
   , inputStreamsEnabled     :: Maybe Int       -- ^ Enabled input streams (CoreAudio only)
@@ -160,6 +161,13 @@ defaultRTOptions = RTOptions {
 onPort :: NetworkPort -> RTOptions
 onPort port = def { networkPort = port }
 
+-- | Create a JACK hardware device name from an optional server name and a
+--   client name.
+--
+-- Since 0.8.0
+jackDeviceName :: Maybe String -> String -> String
+jackDeviceName = (++) . maybe "" ((++":"))
+
 -- | Default realtime server options (UDP transport).
 defaultRTOptionsUDP :: RTOptions
 {-# DEPRECATED defaultRTOptionsUDP "Use 'onPort defaultUDPPort' instead" #-}
@@ -180,7 +188,7 @@ data NRTOptions = NRTOptions {
   , outputSampleRate      :: Int               -- ^ Output sound file sample rate
   , outputSoundFileFormat :: SoundFileFormat   -- ^ Output sound file header format (since 0.8.0)
   , outputSampleFormat    :: SampleFormat      -- ^ Output sound file sample format
-} deriving (Eq, Show)
+  } deriving (Eq, Show)
 
 instance Default NRTOptions where
   def = defaultNRTOptions
