@@ -80,8 +80,9 @@ mkServerOptions options = flatten [
 mkRTOptions :: RTOptions -> [String]
 mkRTOptions options = flatten $
     [ case networkPort options of
-        UDPPort _ -> option options "-u" networkPort
-        TCPPort _ -> option options "-t" networkPort ]
+        -- Don't use 'option' here because one of these _has_ to be present!
+        p@(UDPPort _) -> Just ("-u", showOption p)
+        p@(TCPPort _) -> Just ("-t", showOption p) ]
     ++
     [ option options "-R" useZeroconf
     , option options "-H" hardwareDeviceName
