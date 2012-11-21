@@ -1,10 +1,10 @@
-{-# LANGUAGE ExistentialQuantification, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Sound.SC3.Server.Process.CommandLine (
     rtCommandLine
   , nrtCommandLine
 ) where
 
-import Data.Default (def)
+import Data.Default (Default, def)
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import Sound.SC3.Server.Enum
@@ -17,24 +17,28 @@ import Sound.SC3.Server.Process.Options
 class Show a => Option a where
     showOption :: a -> String
 
-instance Option (String) where
+instance Option String where
     showOption = id
 
-instance Option (Int) where
+instance Option Int where
     showOption = show
 
-instance Option (Bool) where
+instance Option Bool where
     showOption = showOption . fromEnum
 
 instance Option a => Option (Maybe a) where
     showOption Nothing  = ""
     showOption (Just a) = showOption a
 
-instance Option (Verbosity) where
+instance Option Verbosity where
     showOption = showOption . fromEnum
 
 instance Option [FilePath] where
     showOption = intercalate ":"
+
+instance Option NetworkPort where
+  showOption (UDPPort p) = show p
+  showOption (TCPPort p) = show p
 
 instance Option SoundFileFormat where
     showOption = soundFileFormatString
@@ -42,60 +46,51 @@ instance Option SoundFileFormat where
 instance Option SampleFormat where
     showOption = sampleFormatString
 
-data ToOption a = forall b . Option b => ToOption (a -> b)
-
-toOption :: a -> ToOption a -> String
-toOption a (ToOption f) = showOption (f a)
-
-mkOption :: a -> a -> String -> ToOption a -> Maybe (String, String)
-mkOption defaultOptions options optName accessor =
-        if value == defaultValue
-        then Nothing
-        else Just (optName, value)
+option :: (Default a, Option b, Eq b) => a -> String -> (a -> b) -> Maybe (String, String)
+option options flag accessor =
+      if value == accessor def
+      then Nothing
+      else Just (flag, showOption value)
     where
-        defaultValue = defaultOptions `toOption` accessor
-        value        = options `toOption` accessor
+      value = accessor options
 
-mkOptions :: a -> a -> [(String, ToOption a)] -> [(String, String)]
-mkOptions defaultOptions options assocs = [x | Just x <- map (uncurry $ mkOption defaultOptions options) assocs]
-
-flattenOptions :: [(a, a)] -> [a]
-flattenOptions [] = []
-flattenOptions ((a, b):xs) = a : b : flattenOptions xs
+flatten :: [Maybe (a, a)] -> [a]
+flatten [] = []
+flatten (Nothing:xs) = flatten xs
+flatten (Just (a, b):xs) = a : b : flatten xs
 
 mkServerOptions :: ServerOptions -> [String]
-mkServerOptions options = (flattenOptions.mkOptions def options) [ 
-    ("-c" , ToOption numberOfControlBusChannels)
-  , ("-a" , ToOption numberOfAudioBusChannels  )
-  , ("-i" , ToOption numberOfInputBusChannels  )
-  , ("-o" , ToOption numberOfOutputBusChannels )
-  , ("-z" , ToOption blockSize                 )
-  , ("-b" , ToOption numberOfSampleBuffers     )
-  , ("-n" , ToOption maxNumberOfNodes          )
-  , ("-d" , ToOption maxNumberOfSynthDefs      )
-  , ("-m" , ToOption realtimeMemorySize        )
-  , ("-w" , ToOption numberOfWireBuffers       )
-  , ("-r" , ToOption numberOfRandomSeeds       )
-  , ("-D" , ToOption loadSynthDefs             )
-  , ("-v" , ToOption verbosity                 )
-  , ("-U" , ToOption ugenPluginPath            )
-  , ("-P" , ToOption restrictedPath            ) ]
+mkServerOptions options = flatten [
+    option options "-c" numberOfControlBusChannels
+  , option options "-a" numberOfAudioBusChannels
+  , option options "-i" numberOfInputBusChannels
+  , option options "-o" numberOfOutputBusChannels
+  , option options "-z" blockSize
+  , option options "-b" numberOfSampleBuffers
+  , option options "-n" maxNumberOfNodes
+  , option options "-d" maxNumberOfSynthDefs
+  , option options "-m" realtimeMemorySize
+  , option options "-w" numberOfWireBuffers
+  , option options "-r" numberOfRandomSeeds
+  , option options "-D" loadSynthDefs
+  , option options "-v" verbosity
+  , option options "-U" ugenPluginPath
+  , option options "-P" restrictedPath ]
 
 mkRTOptions :: RTOptions -> [String]
-mkRTOptions options =
-    (case networkPort options of
-        UDPPort p -> ["-u", showOption p]
-        TCPPort p -> ["-t", showOption p])
+mkRTOptions options = flatten $
+    [ case networkPort options of
+        UDPPort _ -> option options "-u" networkPort
+        TCPPort _ -> option options "-t" networkPort ]
     ++
-    (flattenOptions $ mkOptions def options $
-        [ ("-R" , ToOption useZeroconf          )
-        , ("-H" , ToOption hardwareDeviceName   )
-        , ("-Z" , ToOption hardwareBufferSize   )
-        , ("-S" , ToOption hardwareSampleRate   )
-        , ("-l" , ToOption maxNumberOfLogins    )
-        , ("-p" , ToOption sessionPassword      )
-        , ("-I" , ToOption inputStreamsEnabled  )
-        , ("-O" , ToOption outputStreamsEnabled ) ])
+    [ option options "-R" useZeroconf
+    , option options "-H" hardwareDeviceName
+    , option options "-Z" hardwareBufferSize
+    , option options "-S" hardwareSampleRate
+    , option options "-l" maxNumberOfLogins
+    , option options "-p" sessionPassword
+    , option options "-I" inputStreamsEnabled
+    , option options "-O" outputStreamsEnabled ]
 
 mkNRTOptions :: NRTOptions -> Maybe FilePath -> [String]
 mkNRTOptions options commandFilePath =
