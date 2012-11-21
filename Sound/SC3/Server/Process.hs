@@ -14,11 +14,11 @@ module Sound.SC3.Server.Process (
 ) where
 
 import           Control.Applicative ((<$>))
-import           Control.Concurrent (forkIO)
+import           Control.Concurrent (forkIO, rtsSupportsBoundThreads)
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, throwIO)
+import           Control.Monad (liftM, unless)
 import           Data.List (isPrefixOf)
-import           Control.Monad (liftM)
 import           Sound.OSC.FD (Transport(..))
 import qualified Sound.OSC.FD as OSC
 import           Sound.SC3 (quit)
@@ -81,6 +81,13 @@ pipeOutput f h =
     catchEOF (hGetLine h >>= f >> pipeOutput f h)
              (\_ -> return ())
 
+ensureThreadedRuntime :: String -> IO ()
+ensureThreadedRuntime fun = unless rtsSupportsBoundThreads $
+  error $ "In order to call '"
+        ++ fun
+        ++ "' without blocking all the other threads in the system,"
+        ++ " you must compile the program with -threaded."
+
 -- ====================================================================
 -- * Realtime scsynth execution
 
@@ -106,6 +113,7 @@ withSynth ::
  -> (NetworkTransport -> IO a)  -- ^ Action to execute with the transport
  -> IO a                        -- ^ Action result
 withSynth serverOptions rtOptions handler action = do
+  ensureThreadedRuntime "withSynth"
   (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
   forkPipe onPutError hErr
   processResult <- newEmptyMVar
@@ -160,20 +168,21 @@ withNRT ::
  -> (Handle -> IO a)    -- ^ Action
  -> IO a                -- ^ Action result
 withNRT serverOptions nrtOptions handler action = do
-    (hIn, hOut, hErr, pid) <- runInteractiveProcess exe args Nothing Nothing
-    forkPipe onPutString hOut
-    forkPipe onPutError hErr
-    processResult <- newEmptyMVar
-    forkIO $ waitForProcess pid >>= putMVar processResult
-    -- Prioritize process exit code over EOF exception.
-    result <- catchEOF (liftM Right (action hIn)) (return . Left)
-    exitCode <- takeMVar processResult
-    case exitCode of
-        ExitSuccess ->
-          case result of
-            Left ex -> throwIO ex
-            Right a -> return a
-        ExitFailure _ -> throwIO exitCode
-    where
-        (exe:args) = nrtCommandLine serverOptions nrtOptions Nothing
-        forkPipe f = forkIO . pipeOutput (f handler)
+  ensureThreadedRuntime "withNRT"
+  (hIn, hOut, hErr, pid) <- runInteractiveProcess exe args Nothing Nothing
+  forkPipe onPutString hOut
+  forkPipe onPutError hErr
+  processResult <- newEmptyMVar
+  forkIO $ waitForProcess pid >>= putMVar processResult
+  -- Prioritize process exit code over EOF exception.
+  result <- catchEOF (liftM Right (action hIn)) (return . Left)
+  exitCode <- takeMVar processResult
+  case exitCode of
+    ExitSuccess ->
+      case result of
+        Left ex -> throwIO ex
+        Right a -> return a
+    ExitFailure _ -> throwIO exitCode
+  where
+    (exe:args) = nrtCommandLine serverOptions nrtOptions Nothing
+    forkPipe f = forkIO . pipeOutput (f handler)
