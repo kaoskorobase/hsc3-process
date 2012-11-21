@@ -151,6 +151,8 @@ withSynth serverOptions rtOptions handler action = do
 
 -- | Render a NRT score by executing an instance of @scsynth@ and return the
 --   process' exit code.
+--
+-- Since 0.8.0
 runNRT ::
     ServerOptions       -- ^ General server options
  -> NRTOptions          -- ^ Non-realtime server options
@@ -165,6 +167,8 @@ runNRT serverOptions nrtOptions commandFilePath =
 --
 -- GHC Note: in order to call @withNRT@ without blocking all the other threads
 -- in the system, you must compile the program with @-threaded@.
+--
+-- Since 0.8.0
 withNRT ::
     ServerOptions       -- ^ General server options
  -> NRTOptions          -- ^ Non-realtime server options

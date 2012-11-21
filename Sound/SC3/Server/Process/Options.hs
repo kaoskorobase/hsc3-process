@@ -155,6 +155,8 @@ defaultRTOptions = RTOptions {
   }
 
 -- | Create RTOptions with a specific network port.
+--
+-- Since 0.8.0
 onPort :: NetworkPort -> RTOptions
 onPort port = def { networkPort = port }
 
@@ -176,7 +178,7 @@ data NRTOptions = NRTOptions {
     inputFilePath         :: Maybe FilePath    -- ^ Path to input sound file ('Nothing' for no audio input)
   , outputFilePath        :: FilePath          -- ^ Path to output sound file
   , outputSampleRate      :: Int               -- ^ Output sound file sample rate
-  , outputSoundFileFormat :: SoundFileFormat   -- ^ Output sound file header format (since 0.8)
+  , outputSoundFileFormat :: SoundFileFormat   -- ^ Output sound file header format (since 0.8.0)
   , outputSampleFormat    :: SampleFormat      -- ^ Output sound file sample format
 } deriving (Eq, Show)
 
