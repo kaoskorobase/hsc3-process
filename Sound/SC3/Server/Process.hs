@@ -16,7 +16,7 @@ import           Control.Applicative ((<$>))
 import           Control.Concurrent (forkIO, rtsSupportsBoundThreads)
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, throwIO)
-import           Control.Monad (liftM, unless)
+import           Control.Monad (liftM, unless, void)
 import           Data.Default (Default(..))
 import           Data.List (isPrefixOf)
 import           Sound.OSC.FD (Transport(..))
@@ -121,7 +121,7 @@ withSynth serverOptions rtOptions handler action = do
   (_, hOut, hErr, hProc) <- runInteractiveProcess exe args Nothing Nothing
   forkPipe onPutError hErr
   processResult <- newEmptyMVar
-  forkIO $ waitForProcess hProc >>= putMVar processResult
+  void $ forkIO $ waitForProcess hProc >>= putMVar processResult
   -- Prioritize process exit code over EOF exception.
   result <- catchEOF (liftM Right (loop hOut)) (return . Left)
   exitCode <- takeMVar processResult
@@ -144,7 +144,7 @@ withSynth serverOptions rtOptions handler action = do
       bracket (openTransport (networkPort rtOptions))
               (flip OSC.sendOSC quit)
               action
-    forkPipe f = forkIO . pipeOutput (f handler)
+    forkPipe f = void . forkIO . pipeOutput (f handler)
 
 -- ====================================================================
 -- * Non-Realtime scsynth execution
@@ -177,7 +177,7 @@ withNRT serverOptions nrtOptions handler action = do
   forkPipe onPutString hOut
   forkPipe onPutError hErr
   processResult <- newEmptyMVar
-  forkIO $ waitForProcess pid >>= putMVar processResult
+  void $ forkIO $ waitForProcess pid >>= putMVar processResult
   -- Prioritize process exit code over EOF exception.
   result <- catchEOF (liftM Right (action hIn)) (return . Left)
   exitCode <- takeMVar processResult
@@ -189,4 +189,4 @@ withNRT serverOptions nrtOptions handler action = do
     ExitFailure _ -> throwIO exitCode
   where
     (exe:args) = nrtCommandLine serverOptions nrtOptions Nothing
-    forkPipe f = forkIO . pipeOutput (f handler)
+    forkPipe f = void . forkIO . pipeOutput (f handler)

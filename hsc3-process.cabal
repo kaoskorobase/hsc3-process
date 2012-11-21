@@ -34,7 +34,7 @@ Library
                   , process >= 1.0
                   , transformers >= 0.2
 
-  Ghc-Options:      -W
+  Ghc-Options:      -Wall
  
 Source-Repository head
   Type:             git
@@ -49,7 +49,7 @@ Executable hsc3-sine
     Build-Depends:
         base >= 4.3 && < 5
     Ghc-Options:
-        -W -rtsopts -threaded
+        -Wall -rtsopts -threaded
 
 Executable hsc3-nrt
     Main-Is: examples/nrt.hs
@@ -60,4 +60,4 @@ Executable hsc3-nrt
     Build-Depends:
         base >= 4.3 && < 5
     Ghc-Options:
-        -W -rtsopts -threaded
+        -Wall -rtsopts -threaded
