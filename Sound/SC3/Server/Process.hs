@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 -- | This module includes utilities for spawning an external scsynth process,
--- either for realtime or non-realtime execution.
+-- either for realtime or non-realtime execution, and for connecting to existing
+-- processes.
 module Sound.SC3.Server.Process (
   module Sound.SC3.Server.Process.Options
 , OutputHandler(..)
