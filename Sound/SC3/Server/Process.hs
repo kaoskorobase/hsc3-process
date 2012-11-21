@@ -68,8 +68,7 @@ defaultOutputHandler :: OutputHandler
 {-# DEPRECATED defaultOutputHandler "Use Data.Default.Default instance instead" #-}
 defaultOutputHandler = OutputHandler {
     onPutString = \s -> hPutStrLn stdout s >> hFlush stdout
-  , onPutError  = \s -> hPutStrLn stderr s >> hFlush stderr
-  }
+  , onPutError  = \s -> hPutStrLn stderr s >> hFlush stderr }
 
 -- ====================================================================
 -- Process helpers
