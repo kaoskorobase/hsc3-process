@@ -1,23 +1,23 @@
-module Sound.SC3.Server.Process.Options
-  ( Verbosity(..)
-  , ServerOptions(..)
-  , defaultServerOptions
-  , fromBuildDirectory
-  , fromPrefix
-  , fromApplicationBundle
-  , NetworkPort(..)
-  , defaultUDPPort
-  , defaultTCPPort
-  , RTOptions(..)
-  , onPort
-  , jackDeviceName
-  , withJackDeviceName
-  , defaultRTOptions
-  , defaultRTOptionsUDP
-  , defaultRTOptionsTCP
-  , NRTOptions(..)
-  , defaultNRTOptions
-  ) where
+module Sound.SC3.Server.Process.Options (
+  Verbosity(..)
+, ServerOptions(..)
+, defaultServerOptions
+, fromBuildDirectory
+, fromPrefix
+, fromApplicationBundle
+, NetworkPort(..)
+, defaultUDPPort
+, defaultTCPPort
+, RTOptions(..)
+, onPort
+, jackDeviceName
+, withJackDeviceName
+, defaultRTOptions
+, defaultRTOptionsUDP
+, defaultRTOptionsTCP
+, NRTOptions(..)
+, defaultNRTOptions
+) where
 
 import Data.Default (Default(..))
 import Sound.SC3.Server.Enum
