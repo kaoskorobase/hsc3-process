@@ -16,9 +16,9 @@ Tested-With:        GHC == 7.4
 Build-Type:         Simple
 Cabal-Version:      >= 1.6
 
-Extra-Source-Files: examples/config.hs
-                    examples/scsynth.cfg
-                    examples/sine.hs
+Flag build-examples
+    Description:    Build example programs
+    Default:        False
 
 Library
   Exposed-Modules:  Sound.SC3.Server.Process
@@ -38,3 +38,25 @@ Library
 Source-Repository head
   Type:             git
   Location:         git://github.com/kaoskorobase/hsc3-process.git
+
+Executable hsc3-sine
+    Main-Is: examples/sine.hs
+    if flag(build-examples)
+        Buildable: True
+    else
+        Buildable: False
+    Build-Depends:
+        base >= 4.3 && < 5
+    Ghc-Options:
+        -W -rtsopts -threaded
+
+Executable hsc3-nrt
+    Main-Is: examples/nrt.hs
+    if flag(build-examples)
+        Buildable: True
+    else
+        Buildable: False
+    Build-Depends:
+        base >= 4.3 && < 5
+    Ghc-Options:
+        -W -rtsopts -threaded
