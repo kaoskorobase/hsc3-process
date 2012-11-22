@@ -65,7 +65,6 @@ instance Default OutputHandler where
 
 -- | Default IO handler, writing to stdout and stderr, respectively.
 defaultOutputHandler :: OutputHandler
-{-# DEPRECATED defaultOutputHandler "Use Data.Default.Default instance instead" #-}
 defaultOutputHandler = OutputHandler {
     onPutString = \s -> hPutStrLn stdout s >> hFlush stdout
   , onPutError  = \s -> hPutStrLn stderr s >> hFlush stderr }

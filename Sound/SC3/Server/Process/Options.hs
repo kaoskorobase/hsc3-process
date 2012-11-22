@@ -80,7 +80,6 @@ instance Default ServerOptions where
 
 -- | Default server options.
 defaultServerOptions :: ServerOptions
-{-# DEPRECATED defaultServerOptions "Use Data.Default.Default instance instead" #-}
 defaultServerOptions = ServerOptions {
     serverProgram              = "scsynth"
   , numberOfControlBusChannels = 4096
@@ -170,7 +169,6 @@ instance Default RTOptions where
 
 -- | Default realtime server options.
 defaultRTOptions :: RTOptions
-{-# DEPRECATED defaultRTOptions "Use Data.Default.Default instance instead" #-}
 defaultRTOptions = RTOptions {
     -- Network control
     networkPort             = def
@@ -240,7 +238,6 @@ instance Default NRTOptions where
 
 -- | Default non-realtime server options.
 defaultNRTOptions :: NRTOptions
-{-# DEPRECATED defaultNRTOptions "Use Data.Default.Default instance instead" #-}
 defaultNRTOptions = NRTOptions {
     inputFilePath         = Nothing
   , outputFilePath        = "output.wav"
