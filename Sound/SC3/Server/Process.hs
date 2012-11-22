@@ -18,6 +18,7 @@ import           Control.Concurrent (forkIO, rtsSupportsBoundThreads)
 import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import           Control.Exception (Exception(toException), SomeException, bracket, catchJust, throwIO)
 import           Control.Monad (liftM, unless, void)
+import qualified Data.ByteString.Lazy as B
 import           Data.Default (Default(..))
 import           Data.List (isPrefixOf)
 import           Sound.OSC.FD (Transport(..))
@@ -28,7 +29,7 @@ import           Sound.SC3.Server.Process.Options
 import           System.Exit (ExitCode(..))
 import           System.IO (Handle, hFlush, hGetLine, hPutStrLn, stderr, stdout)
 import           System.IO.Error (isEOFError)
-import           System.Process (rawSystem, runInteractiveProcess, waitForProcess)
+import           System.Process (runInteractiveProcess, waitForProcess)
 
 localhost :: String
 localhost = "127.0.0.1"
@@ -148,18 +149,18 @@ withSynth serverOptions rtOptions handler action = do
 -- ====================================================================
 -- * Non-Realtime scsynth execution
 
--- | Render a NRT score by executing an instance of @scsynth@ and return the
---   process' exit code.
+-- | Render a NRT score by executing an instance of @scsynth@.
 --
 -- Since 0.8.0
 runNRT ::
     ServerOptions       -- ^ General server options
  -> NRTOptions          -- ^ Non-realtime server options
+ -> OutputHandler       -- ^ Output handler
  -> FilePath            -- ^ NRT score file path
- -> IO ExitCode         -- ^ Process exit code
-runNRT serverOptions nrtOptions commandFilePath =
-   let exe:args = nrtCommandLine serverOptions nrtOptions (Just commandFilePath)
-   in rawSystem exe args
+ -> IO ()
+runNRT serverOptions nrtOptions handler commandFilePath =
+   withNRT serverOptions nrtOptions handler $
+    \h -> B.readFile commandFilePath >>= B.hPut h
 
 -- | Execute a non-realtime instance of @scsynth@ and pass the process' input
 --   handle to /Action/ and return the result.
