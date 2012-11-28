@@ -23,16 +23,20 @@ Flag build-examples
 Library
   Exposed-Modules:  Sound.SC3.Server.Process
                     Sound.SC3.Server.Process.CommandLine
+                    Sound.SC3.Server.Process.Make
                     Sound.SC3.Server.Process.Options
 
   Build-Depends:    base >= 3 && < 5
                   , bytestring >= 0.8
                   , containers >= 0.2
                   , data-default >= 0.5
+                  , directory
                   , filepath
                   , hosc >= 0.13
                   , hsc3 >= 0.13
                   , process >= 1.0
+                  , time
+                  , time-compat
                   , transformers >= 0.2
 
   Ghc-Options:      -Wall
