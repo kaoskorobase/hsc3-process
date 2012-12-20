@@ -142,7 +142,7 @@ withSynth serverOptions rtOptions handler action = do
     cont h = do
       forkPipe onPutString h
       bracket (openTransport (networkPort rtOptions))
-              (flip OSC.sendOSC quit)
+              (\t -> OSC.sendOSC t quit >> OSC.close t)
               action
     forkPipe f = void . forkIO . pipeOutput (f handler)
 
