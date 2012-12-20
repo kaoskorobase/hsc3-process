@@ -48,9 +48,9 @@ instance Transport NetworkTransport where
     close (NetworkTransport t) = close t
 
 -- | Open a network transport connected to a network port.
-openTransport :: NetworkPort -> IO NetworkTransport
-openTransport (UDPPort p) = NetworkTransport <$> OSC.openUDP localhost (checkPort "UDP" p)
-openTransport (TCPPort p) = NetworkTransport <$> OSC.openTCP localhost (checkPort "TCP" p)
+openTransport :: String -> NetworkPort -> IO NetworkTransport
+openTransport host (UDPPort p) = NetworkTransport <$> OSC.openUDP host (checkPort "UDP" p)
+openTransport host (TCPPort p) = NetworkTransport <$> OSC.openTCP host (checkPort "TCP" p)
 
 -- ====================================================================
 -- * Output handler
@@ -99,9 +99,13 @@ ensureThreadedRuntime fun = unless rtsSupportsBoundThreads $
 withTransport ::
     ServerOptions               -- ^ General server options
  -> RTOptions                   -- ^ Realtime server options
+ -> Maybe String                -- ^ Host to connect to (defaults to localhost)
  -> (NetworkTransport -> IO a)  -- ^ Action to execute with the transport
  -> IO a                        -- ^ Action result
-withTransport _ rtOptions = bracket (openTransport (networkPort rtOptions)) OSC.close
+withTransport _ rtOptions host =
+  bracket
+    (openTransport (maybe localhost id host) (networkPort rtOptions))
+    OSC.close
 
 -- | Execute a realtime instance of @scsynth@ with 'Transport' t.
 --
@@ -141,7 +145,7 @@ withSynth serverOptions rtOptions handler action = do
         else loop h
     cont h = do
       forkPipe onPutString h
-      bracket (openTransport (networkPort rtOptions))
+      bracket (openTransport localhost (networkPort rtOptions))
               (\t -> OSC.sendOSC t quit >> OSC.close t)
               action
     forkPipe f = void . forkIO . pipeOutput (f handler)
