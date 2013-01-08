@@ -1,5 +1,5 @@
 Name:               hsc3-process
-Version:            0.8.0
+Version:            0.9.0
 Synopsis:           Create and control scsynth processes
 Description:
     This library allows to create and control scsynth processes.
@@ -8,7 +8,7 @@ Description:
 License:            GPL
 License-File:       LICENSE
 Category:           Sound
-Copyright:          Copyright (c) Stefan Kersten and others 2008-2012
+Copyright:          Copyright (c) Stefan Kersten and others 2008-2013
 Author:             Stefan Kersten, Rohan Drape
 Maintainer:         kaoskorobase@gmail.com
 Homepage:           https://github.com/kaoskorobase/hsc3-process
