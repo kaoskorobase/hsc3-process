@@ -32,8 +32,8 @@ Library
                   , data-default >= 0.5
                   , directory
                   , filepath
-                  , hosc >= 0.13
-                  , hsc3 >= 0.13
+                  , hosc >= 0.14
+                  , hsc3 >= 0.14
                   , process >= 1.0
                   , time
                   , time-compat
@@ -54,7 +54,10 @@ Executable hsc3-sine
         Buildable: False
     Build-Depends:
         base >= 4.3 && < 5
-      , hsc3-process >= 0.8
+      , data-default >= 0.5
+      , hosc >= 0.14
+      , hsc3 >= 0.14
+      , hsc3-process >= 0.10
     Ghc-Options:
         -Wall -rtsopts -threaded
 
@@ -67,6 +70,9 @@ Executable hsc3-nrt
         Buildable: False
     Build-Depends:
         base >= 4.3 && < 5
-      , hsc3-process >= 0.8
+      , data-default >= 0.5
+      , hosc >= 0.14
+      , hsc3 >= 0.14
+      , hsc3-process >= 0.10
     Ghc-Options:
         -Wall -rtsopts -threaded
