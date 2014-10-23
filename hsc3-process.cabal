@@ -12,6 +12,7 @@ Copyright:          Copyright (c) Stefan Kersten and others 2008-2013
 Author:             Stefan Kersten, Rohan Drape
 Maintainer:         kaoskorobase@gmail.com
 Homepage:           https://github.com/kaoskorobase/hsc3-process
+Bug-Reports:        https://github.com/kaoskorobase/hsc3-process/issues
 Tested-With:        GHC == 7.4
 Build-Type:         Simple
 Cabal-Version:      >= 1.8
