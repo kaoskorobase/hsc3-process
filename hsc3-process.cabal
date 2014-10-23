@@ -17,8 +17,8 @@ Build-Type:         Simple
 Cabal-Version:      >= 1.8
 
 Flag build-examples
-    Description:    Build example programs
-    Default:        False
+  Description:    Build example programs
+  Default:        False
 
 Library
   Exposed-Modules:  Sound.SC3.Server.Process
@@ -46,33 +46,33 @@ Source-Repository head
   Location:         git://github.com/kaoskorobase/hsc3-process.git
 
 Executable hsc3-sine
-    Main-Is: sine.hs
-    Hs-Source-Dirs: examples
-    if flag(build-examples)
-        Buildable: True
-    else
-        Buildable: False
-    Build-Depends:
-        base >= 4.3 && < 5
-      , data-default >= 0.5
-      , hosc >= 0.14
-      , hsc3 >= 0.14
-      , hsc3-process >= 0.10
-    Ghc-Options:
-        -Wall -rtsopts -threaded
+  Main-Is: sine.hs
+  Hs-Source-Dirs: examples
+  if flag(build-examples)
+    Buildable: True
+  else
+    Buildable: False
+  Build-Depends:
+      base >= 4.3 && < 5
+    , data-default >= 0.5
+    , hosc >= 0.14
+    , hsc3 >= 0.14
+    , hsc3-process >= 0.10
+  Ghc-Options:
+    -Wall -rtsopts -threaded
 
 Executable hsc3-nrt
-    Main-Is: nrt.hs
-    Hs-Source-Dirs: examples
-    if flag(build-examples)
-        Buildable: True
-    else
-        Buildable: False
-    Build-Depends:
-        base >= 4.3 && < 5
-      , data-default >= 0.5
-      , hosc >= 0.14
-      , hsc3 >= 0.14
-      , hsc3-process >= 0.10
-    Ghc-Options:
-        -Wall -rtsopts -threaded
+  Main-Is: nrt.hs
+  Hs-Source-Dirs: examples
+  if flag(build-examples)
+    Buildable: True
+  else
+    Buildable: False
+  Build-Depends:
+      base >= 4.3 && < 5
+    , data-default >= 0.5
+    , hosc >= 0.14
+    , hsc3 >= 0.14
+    , hsc3-process >= 0.10
+  Ghc-Options:
+    -Wall -rtsopts -threaded
