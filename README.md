@@ -23,7 +23,7 @@ Please report bugs in our [issue tracker](https://github.com/kaoskorobase/hsc3-p
 
 ### Authors
 
-Copyright (c) Stefan Kersten and others 2008-2012 with contributions by
+Copyright (c) Stefan Kersten and others 2008-2014 with contributions by
 
 * Rohan Drape
 
